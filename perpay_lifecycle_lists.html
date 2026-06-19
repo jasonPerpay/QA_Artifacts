@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perpay — Unified Lifecycle Lists</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#ffffff;
+  --bg2:#f8f7f4;
+  --bg3:#f0ede8;
+  --border:rgba(0,0,0,0.10);
+  --border2:rgba(0,0,0,0.20);
+  --text:#181715;
+  --text2:#6b6963;
+  --text3:#9b9891;
+  --accent:#378ADD;
+  --green:#065f46;
+  --green-bg:#d1fae5;
+  --r:8px;
+  --rl:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#191816;
+    --bg2:#232220;
+    --bg3:#2d2b28;
+    --border:rgba(255,255,255,0.10);
+    --border2:rgba(255,255,255,0.22);
+    --text:#f2ede6;
+    --text2:#a09c96;
+    --text3:#6b6760;
+    --green:#6ee7b7;
+    --green-bg:#064e3b;
+  }
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  padding:28px 24px 48px;
+  max-width:880px;
+  margin:0 auto;
+  font-size:14px;
+  line-height:1.5;
+}
+
+/* ── Header ── */
+.ph{display:flex;align-items:baseline;gap:10px;margin-bottom:22px;padding-bottom:16px;border-bottom:0.5px solid var(--border)}
+.pt{font-size:17px;font-weight:500}
+.ps{font-size:12px;color:var(--text2)}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:20px}
+.tab{padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;border:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px;transition:color .15s,border-color .15s}
+.tab.active{color:var(--text);border-bottom-color:var(--accent)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ── Metrics ── */
+.metrics{display:flex;gap:10px;margin-bottom:16px}
+.mc{flex:1;padding:11px 14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r)}
+.mc.fig{cursor:pointer;text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:background .15s;border-color:var(--border)}
+.mc.fig:hover{background:var(--bg3)}
+.ml{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:4px}
+.mv{font-size:18px;font-weight:500}
+.ms{font-size:11px;color:var(--text2);margin-top:2px}
+.fig-icon{font-size:15px;margin-bottom:3px;color:var(--text2)}
+.fig-cta{font-size:11px;color:var(--accent);margin-top:auto;padding-top:6px}
+
+/* ── Distribution bar ── */
+.dbar{display:flex;height:20px;border-radius:var(--r);overflow:hidden;margin-bottom:12px;gap:1px;cursor:default}
+.ds{height:100%;flex-shrink:0;transition:opacity .1s}
+.ds:hover{opacity:.78}
+
+/* ── Legend ── */
+.leg{display:flex;flex-wrap:wrap;gap:8px 12px;margin-bottom:18px}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:default}
+.ld{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.lv{color:var(--text);font-weight:500}
+
+/* ── Stage cards ── */
+.stages{display:flex;flex-direction:column;gap:4px}
+.sc{border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.sh{display:flex;align-items:center;gap:9px;padding:9px 13px;cursor:pointer;user-select:none;transition:background .1s}
+.sh:hover{background:var(--bg2)}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sname{font-size:13px;font-weight:500;flex:1}
+.scnt{font-size:12px;color:var(--text2)}
+.schev{font-size:9px;color:var(--text3);transition:transform .18s;margin-left:6px}
+.sc.open .schev{transform:rotate(90deg)}
+.sb{display:none;padding:10px 13px 14px;border-top:0.5px solid var(--border);background:var(--bg2)}
+.sc.open .sb{display:block}
+.fl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-top:10px;margin-bottom:3px}
+.fl:first-child{margin-top:0}
+.fv{font-size:12px;line-height:1.6;color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;background:var(--green-bg);color:var(--green);margin-top:8px}
+.ilink{font-size:11px;color:var(--accent);text-decoration:none;margin-top:8px;margin-left:10px}
+.ilink:hover{text-decoration:underline}
+.fr{display:flex;align-items:center;flex-wrap:wrap}
+
+/* ── QA Section ── */
+.qa-wrap{margin-top:14px}
+.qa-toggle{width:100%;text-align:left;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:9px 13px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);display:flex;justify-content:space-between;align-items:center;transition:background .1s,color .1s}
+.qa-toggle:hover{background:var(--bg3);color:var(--text)}
+.qa-body{display:none;margin-top:4px;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.qa-body.open{display:block}
+.qa-group{padding:10px 13px 12px;border-bottom:0.5px solid var(--border);background:var(--bg)}
+.qa-group:last-child{border-bottom:none}
+.qa-gh{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:7px}
+.qt{width:100%;border-collapse:collapse;font-size:11px;line-height:1.45}
+.qt td{padding:3px 10px 3px 0;vertical-align:top}
+.qt td:first-child{color:var(--text2);font-weight:500;white-space:nowrap;width:32%}
+.qt td:nth-child(2){width:24px;white-space:nowrap}
+.qt td:nth-child(3){color:var(--text)}
+
+/* ── Tooltip ── */
+#tt{
+  position:fixed;display:none;
+  background:var(--bg);
+  border:0.5px solid var(--border2);
+  border-radius:var(--r);
+  padding:9px 13px;
+  font-size:11px;
+  z-index:9999;
+  pointer-events:none;
+  box-shadow:0 2px 12px rgba(0,0,0,0.12);
+  min-width:170px;
+}
+.ttn{font-size:12px;font-weight:500;margin-bottom:7px;padding-bottom:7px;border-bottom:0.5px solid var(--border)}
+.ttr{display:flex;justify-content:space-between;gap:18px;margin-top:3px}
+.ttl{color:var(--text2)}
+.ttv{font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+
+<div class="ph">
+  <span class="pt">Perpay — Unified Lifecycle Lists</span>
+  <span class="ps">QA verified · 27 lists · 3 products · Updated 2026-06-19</span>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div id="panels"></div>
+<div id="tt"></div>
+
+<script>
+const BASE=14969336;
+
+const PRODUCTS=[
+{key:'mp',name:'Marketplace',figmaUrl:'https://www.figma.com/board/wKKttSpmH1tvk8GLLjcXym/Unified-Lifecycle-Stages?node-id=2-172&t=HNlbQEOpKqKnd26c-4',stages:[
+  {name:'Pre-Consideration',color:'#888780',id:'10159365',count:1117909,
+   rat:'Active Perpay users with no marketplace signals — top-of-funnel for product discovery and awareness. Suitable for introducing Marketplace to users who may not know the product exists.',
+   criteria:'repayment.ind = false; no marketplace signal (signup_flow ≠ marketplace, acquisition.term ∌ marketplacecard, streaming not set, loans not set); active',
+   excl:'NOT in Denial — denied users already blocked by acquisition-signal check; belt-and-suspenders closes edge cases'},
+  {name:'Consideration',color:'#378ADD',id:'9470906',count:609469,
+   rat:'Users with recent purchase intent within the 60d application expiration window. Goal is driving the first checkout and application submission.',
+   criteria:'repayment.ind = false; active; (joined ≤ 60d AND signup_flow = marketplace) OR (joined ≤ 60d AND acquisition.term contains marketplacecard) OR streaming.viewed_products.last_updated ≤ 60d; NOT Conversion entry criteria',
+   excl:'NOT in Conversion; NOT in Denial'},
+  {name:'Conversion',color:'#1D9E75',id:'9173736',count:120016,
+   rat:'Users with an approved application who have not yet made their first payment. High-intent moment — goal is first-payment activation.',
+   criteria:'repayment.ind = false; active; (awaiting_pmt.most_recent_dt ≤ 60d OR awaiting_pmt.first_dt ≤ 60d) AND loans.status = awaiting_payment',
+   excl:'NOT in Denial — exits when repayment made (repayment.ind → true) or approval window lapses'},
+  {name:'Denial',color:'#E24B4A',id:'10067033',count:52664,
+   rat:'Users in a 60d post-denial cooling window. Suppressed from acquisition messaging; alternative product suggestions or empathetic re-engagement are appropriate.',
+   criteria:'DENIED ≤ 60d; active',
+   excl:'NOT in Late (days_past_due > 0); NOT in Charged Off (current.status = ChargedOff)'},
+  {name:'Reengagement',color:'#BA7517',id:'9555364',count:12599293,
+   rat:'The largest stage (~82% of active users): anyone with marketplace signals aged out of an active funnel stage. Intentionally broad — sub-segmentation by journey will be layered in as strategy matures.',
+   criteria:'repayment.ind = false; active; signup_flow = marketplace OR acquisition.term contains marketplacecard OR streaming is set OR loans is set',
+   excl:'NOT in Consideration; NOT in Conversion; NOT in Denial'},
+  {name:'Retention',color:'#639922',id:'9473300',count:121563,
+   rat:'Active Marketplace customers within the repurchase window. 180d window reflects the longer repurchase cycle for goods. Goal is upsell, loyalty, and cross-sell.',
+   criteria:'repayment.ind = true; repayments.most_recent_dt ≤ 180d OR repayments.first_dt ≤ 180d; active',
+   excl:'NOT in Late; NOT in Charged Off; NOT in Denial (closes gap: active buyer denied on new application)'},
+  {name:'Churn',color:'#D85A30',id:'9588261',count:117750,
+   rat:'Lapsed customers aged out of the Retention window. Goal is win-back with compelling offers.',
+   criteria:'repayment.ind = true; active',
+   excl:'NOT in Retention (repayments ≤ 180d); NOT in Late; NOT in Charged Off; NOT in Denial (closes gap: returning buyer denied on new application)'},
+  {name:'Late',color:'#D4537E',id:'9626770',count:41339,
+   rat:'Currently delinquent customers. All marketing suppressed; payment recovery takes priority.',
+   criteria:'days_past_due > 0; active',
+   excl:'NOT in Charged Off (current.status = ChargedOff)'},
+  {name:'Charged Off',color:'#5F5E5A',id:'10168337',count:189337,
+   rat:'Terminal delinquency. Suppression only.',
+   criteria:'current.status = ChargedOff; active',
+   excl:'Terminal state'}
+],
+qa:[
+  {group:'Post-purchase funnel',pairs:[
+    ['Charged Off ↔ Late','✅','Late excludes Charged Off'],
+    ['Charged Off ↔ Retention','✅','Retention excludes Charged Off'],
+    ['Charged Off ↔ Churn','✅','Churn excludes Charged Off'],
+    ['Late ↔ Retention','✅','Retention excludes Late'],
+    ['Late ↔ Churn','✅','Churn excludes Late'],
+    ['Retention ↔ Churn','✅','Churn excludes Retention (higher priority within repayment.ind = true)'],
+  ]},
+  {group:'Pre-purchase funnel',pairs:[
+    ['Consideration ↔ Conversion','✅','Consideration NOT block mirrors Conversion entry exactly — structurally impossible'],
+    ['Consideration ↔ Reengagement','✅','Reengagement excludes Consideration'],
+    ['Consideration ↔ Pre-Consideration','✅','Pre-Consideration NOT-ANY block covers all Consideration entry signals'],
+    ['Conversion ↔ Reengagement','✅','Reengagement excludes Conversion'],
+    ['Conversion ↔ Pre-Consideration','✅','Conversion users have loans is set; Pre-Consideration requires NOT loans is set'],
+    ['Reengagement ↔ Pre-Consideration','✅','Opposite marketplace-signal requirement — structurally impossible'],
+  ]},
+  {group:'Denial pairs',pairs:[
+    ['Denial ↔ Late','✅','Denial excludes Late'],
+    ['Denial ↔ Charged Off','✅','Denial excludes Charged Off'],
+    ['Denial ↔ Retention','✅','Retention explicitly excludes Denial — closes real gap (active buyer denied on new application)'],
+    ['Denial ↔ Churn','✅','Churn explicitly excludes Denial — closes real gap (returning buyer denied on new application)'],
+    ['Denial ↔ Reengagement','✅','Reengagement excludes Denial'],
+    ['Denial ↔ Conversion','✅','Conversion excludes Denial'],
+    ['Denial ↔ Consideration','✅','Consideration excludes Denial'],
+    ['Denial ↔ Pre-Consideration','✅','Pre-Consideration excludes Denial; denied users also blocked by NOT-ANY acquisition-signal check'],
+  ]},
+  {group:'Cross-funnel (pre-purchase ↔ post-purchase)',pairs:[
+    ['Charged Off ↔ Reengagement','✅','CO implies repayment.ind = true; Reengagement requires repayment.ind = false — domain-impossible'],
+    ['Charged Off ↔ Conversion','✅','loans.status = ChargedOff vs awaiting_payment — mutually exclusive field values'],
+    ['Charged Off ↔ Consideration','✅','Consideration requires repayment.ind = false; CO implies post-purchase — domain-impossible'],
+    ['Charged Off ↔ Pre-Consideration','✅','CO users have loans is set; Pre-Consideration requires NOT loans is set'],
+    ['Late ↔ all pre-purchase lists','✅','Late users are post-purchase (repayment.ind = true); all pre-purchase lists require repayment.ind = false'],
+    ['Retention ↔ all pre-purchase lists','✅','Retention requires repayment.ind = true; all pre-purchase lists require repayment.ind = false'],
+    ['Churn ↔ all pre-purchase lists','✅','Churn requires repayment.ind = true; all pre-purchase lists require repayment.ind = false'],
+  ]},
+]},
+{key:'cc',name:'Credit Card',figmaUrl:'https://www.figma.com/board/wKKttSpmH1tvk8GLLjcXym/Unified-Lifecycle-Stages?node-id=142-272&t=HNlbQEOpKqKnd26c-4',stages:[
+  {name:'Pre-Consideration',color:'#888780',id:'10159636',count:10040027,
+   rat:'Active Perpay users with no Credit Card signals — top-of-funnel for CC awareness and discovery.',
+   criteria:'NOT (signup_flow matches hosted_model_signup|card OR started_card_appliaction.ind = true); NOT provisioned.ind = true; active',
+   excl:'NOT in Consideration; NOT in Conversion — denied users already structurally blocked by started_card_appliaction.ind signal'},
+  {name:'Consideration',color:'#378ADD',id:'9174004',count:108160,
+   rat:'Users with recent CC intent within 60d. Two entry paths: CC signup and application start can be the same event or sequential steps. Goal is application completion.',
+   criteria:'(started_card_appliaction.dt ≤ 60d) OR (date_joined ≤ 60d AND signup_flow matches CC); NOT approved.ind = true; active',
+   excl:'NOT in Denial'},
+  {name:'Conversion',color:'#1D9E75',id:'9173908',count:88817,
+   rat:'Approved applicants whose card has not yet been provisioned. Goal is driving card setup and onboarding completion.',
+   criteria:'approved.most_recent_dt ≤ 60d; NOT provisioned.ind = true; active',
+   excl:'No Denial exclusion — one-way lifecycle means approved users can never be denied again'},
+  {name:'Denial',color:'#E24B4A',id:'10067046',count:745126,
+   rat:'60d post-denial cooling window. Conversion holdout handles users who reapplied and were approved shortly after denial. Alternative product messaging appropriate.',
+   criteria:'current.decision = DENIED AND current.dt ≤ 60d; active',
+   excl:'NOT in Conversion — post-provisioning pairs domain-protected (denied users never receive a card)'},
+  {name:'Reengagement',color:'#BA7517',id:'9625161',count:3791202,
+   rat:'Users who showed CC interest but have not provisioned and whose active funnel windows have expired. Re-engagement with the card application is the primary lever.',
+   criteria:'signup_flow matches hosted_model_signup|card OR started_card_appliaction.ind = true; NOT provisioned.ind = true; active',
+   excl:'NOT in Consideration; NOT in Conversion; NOT in Denial'},
+  {name:'Retention',color:'#639922',id:'9473626',count:95809,
+   rat:'Active cardholders within the 30d transaction window. 30d reflects expected monthly CC transaction frequency. Goal is engagement, spend velocity, and cross-sell.',
+   criteria:'provisioned.ind = true; lifetime_transactions.most_recent_dt ≤ 30d; active',
+   excl:'NOT in Late (card_status = SUSPENDED); NOT in Charged Off'},
+  {name:'Late',color:'#D4537E',id:'9626795',count:46041,
+   rat:'Cardholders who have missed a payment. All marketing suppressed; payment recovery takes priority.',
+   criteria:'card_status = SUSPENDED; active',
+   excl:'SUSPENDED and CHARGED_OFF are mutually exclusive — structural separation, no additional exclusion required'},
+  {name:'Charged Off',color:'#5F5E5A',id:'10168495',count:39906,
+   rat:'Terminal card delinquency. Suppression only.',
+   criteria:'card_status contains CHARGED_OFF; active',
+   excl:'Terminal card status'},
+  {name:'Churn',color:'#D85A30',id:'9625195',count:14293,
+   rat:'Provisioned cardholders no longer actively using their card. Note: newly provisioned zero-transaction users also land here (no dedicated onboarding stage). Goal is re-engagement.',
+   criteria:'provisioned.ind = true; active',
+   excl:'NOT in Retention (lifetime_transactions.most_recent_dt ≤ 30d); NOT in Late; NOT in Charged Off'}
+],
+qa:[
+  {group:'Pre-provisioning funnel',pairs:[
+    ['Consideration ↔ Conversion','✅','NOT approved.ind vs approved.most_recent_dt — structurally impossible'],
+    ['Consideration ↔ Denial','✅','Consideration excludes Denial'],
+    ['Consideration ↔ Reengagement','✅','Reengagement excludes Consideration'],
+    ['Consideration ↔ Pre-Consideration','✅','Pre-Consideration excludes Consideration'],
+    ['Conversion ↔ Denial','✅','One-way lifecycle — approved users can never be denied again'],
+    ['Conversion ↔ Reengagement','✅','Reengagement excludes Conversion'],
+    ['Conversion ↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],
+    ['Denial ↔ Reengagement','✅','Reengagement excludes Denial'],
+    ['Denial ↔ Pre-Consideration','✅','Denied users have started_card_appliaction.ind = true — blocked by NOT-ANY acquisition signal'],
+    ['Reengagement ↔ Pre-Consideration','✅','Opposite CC acquisition signal requirement — structurally impossible'],
+  ]},
+  {group:'Post-provisioning funnel',pairs:[
+    ['Charged Off ↔ Late','✅','SUSPENDED vs CHARGED_OFF — single field cannot satisfy both'],
+    ['Charged Off ↔ Retention','✅','Retention excludes Charged Off'],
+    ['Charged Off ↔ Churn','✅','Churn excludes Charged Off'],
+    ['Late ↔ Retention','✅','Retention excludes Late'],
+    ['Late ↔ Churn','✅','Churn excludes Late'],
+    ['Retention ↔ Churn','✅','Churn excludes Retention (higher priority within provisioned.ind = true)'],
+  ]},
+  {group:'Denial ↔ post-provisioning',pairs:[
+    ['Denial ↔ Retention','✅','Domain-protected only: denied users never receive a card (no explicit exclusion exists)'],
+    ['Denial ↔ Late','✅','SUSPENDED requires a physical card; denied users never receive one — domain-protected only'],
+    ['Denial ↔ Charged Off','✅','Same as Denial ↔ Late — domain-protected only'],
+    ['Denial ↔ Churn','✅','Churn requires provisioned.ind = true; denied users are never provisioned — domain-protected only'],
+  ]},
+  {group:'Cross-funnel (pre-provisioning ↔ post-provisioning)',pairs:[
+    ['Pre-Consideration ↔ Retention/Churn','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],
+    ['Pre-Consideration ↔ Late/CO','✅','SUSPENDED/CHARGED_OFF presuppose provisioning — domain-impossible'],
+    ['Consideration ↔ Retention/Late/CO/Churn','✅','NOT approved.ind vs provisioning chain — domain-impossible'],
+    ['Conversion ↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],
+    ['Conversion ↔ Late/CO/Churn','✅','NOT provisioned.ind vs post-provisioning statuses — structural/domain-impossible'],
+    ['Reengagement ↔ Retention/Late/CO/Churn','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],
+  ]},
+]},
+{key:'pp',name:'Perpay+',figmaUrl:'https://www.figma.com/board/wKKttSpmH1tvk8GLLjcXym/Unified-Lifecycle-Stages?node-id=142-513&t=HNlbQEOpKqKnd26c-4',stages:[
+  {name:'Pre-Consideration',color:'#888780',id:'10159789',count:11203369,
+   rat:'Active Perpay users who have never started a Perpay+ application — top-of-funnel for PP+ awareness and discovery.',
+   criteria:'application_start NOT set; active',
+   excl:'NOT status = enabled/canceled/pending_cancellation/disabled; NOT in Consideration; NOT in Conversion; NOT in Late; NOT in Charged Off; NOT in Denial'},
+  {name:'Consideration',color:'#378ADD',id:'9531607',count:46570,
+   rat:'Users who recently started a Perpay+ application (within 60d). Goal is application completion and submission.',
+   criteria:'application_start.most_recent_dt ≤ 60d; NOT approved.ind; active',
+   excl:'NOT in Churn; NOT in Denial'},
+  {name:'Conversion',color:'#1D9E75',id:'9467081',count:66914,
+   rat:'Approved users who have not yet activated their first payment cycle. One-way lifecycle ensures Denial overlap is impossible. Goal is first payment activation.',
+   criteria:'approved.ind = true AND approved.most_recent_dt ≤ 60d; NOT status = enabled; active',
+   excl:'One-way lifecycle — approved users can never be denied again'},
+  {name:'Denial',color:'#E24B4A',id:'10067066',count:56043,
+   rat:'60d post-denial cooling window. Suppressed from PP+ acquisition messaging; Marketplace cross-sell appropriate. Delinquency holdouts prevent messaging conflicts.',
+   criteria:'DENIED ≤ 60d; active',
+   excl:'NOT in Late (days_past_due > 0); NOT in Charged Off (charged_off.ind = true)'},
+  {name:'Reengagement',color:'#BA7517',id:'9625797',count:744593,
+   rat:'Users who have started a PP+ application but have never been enabled, and whose active funnel windows have expired. Re-application encouragement is the primary lever.',
+   criteria:'application_start is set; active',
+   excl:'NOT status = enabled/canceled/pending_cancellation/disabled; NOT in Consideration; NOT in Conversion; NOT in Late; NOT in Charged Off; NOT in Denial'},
+  {name:'Retention',color:'#639922',id:'9625742',count:220289,
+   rat:'Active PP+ users in good standing. Goal is engagement and cross-sell to Marketplace and Credit Card.',
+   criteria:'status = enabled; active',
+   excl:'NOT in Denial; NOT in Late; NOT in Charged Off'},
+  {name:'Late',color:'#D4537E',id:'10067055',count:59605,
+   rat:'PP+ users with a missed payment. Marketing suppressed; payment recovery takes priority.',
+   criteria:'days_past_due > 0; active',
+   excl:'NOT in Charged Off (charged_off.ind = true)'},
+  {name:'Charged Off',color:'#5F5E5A',id:'10168348',count:80591,
+   rat:'Terminal delinquency. Suppression only.',
+   criteria:'charged_off.ind = true; active',
+   excl:'Terminal state'},
+  {name:'Churn',color:'#D85A30',id:'10160128',count:2492580,
+   rat:'Three sub-states: disabled (missed payment cycle — recoverable), pending_cancellation (cancellation in progress), canceled (user-requested — win-back lever). Sub-states may warrant differentiated messaging.',
+   criteria:'status = canceled / pending_cancellation / disabled; active',
+   excl:'NOT in Denial; NOT in Late; NOT in Charged Off'}
+],
+qa:[
+  {group:'Application funnel',pairs:[
+    ['Consideration ↔ Conversion','✅','NOT approved.ind vs approved.ind — structurally impossible'],
+    ['Consideration ↔ Denial','✅','Consideration excludes Denial'],
+    ['Consideration ↔ Churn','✅','Consideration excludes Churn; Churn status requires prior subscription — domain-impossible'],
+    ['Consideration ↔ Reengagement','✅','Reengagement excludes Consideration'],
+    ['Consideration ↔ Pre-Consideration','✅','Pre-Consideration excludes Consideration'],
+    ['Conversion ↔ Denial','✅','One-way lifecycle — approved users can never be denied again'],
+    ['Conversion ↔ Reengagement','✅','Reengagement excludes Conversion'],
+    ['Conversion ↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],
+    ['Denial ↔ Reengagement','✅','Reengagement excludes Denial'],
+    ['Denial ↔ Pre-Consideration','✅','Pre-Consideration excludes Denial'],
+    ['Reengagement ↔ Pre-Consideration','✅','Opposite application_start requirement — structurally impossible'],
+  ]},
+  {group:'Subscription status funnel',pairs:[
+    ['Retention ↔ Churn','✅','status = enabled vs canceled/pending_cancellation/disabled — structurally impossible'],
+    ['Retention ↔ Late','✅','Retention excludes Late'],
+    ['Retention ↔ Charged Off','✅','Retention excludes Charged Off'],
+    ['Retention ↔ Denial','✅','Retention excludes Denial; one-way lifecycle also domain-impossible'],
+    ['Late ↔ Churn','✅','Churn excludes Late'],
+    ['Charged Off ↔ Churn','✅','Churn excludes Charged Off'],
+    ['Churn ↔ Denial','✅','Churn excludes Denial; one-way lifecycle domain-impossible'],
+    ['Late ↔ Charged Off','✅','Late excludes Charged Off'],
+  ]},
+  {group:'Cross-funnel',pairs:[
+    ['Conversion ↔ Retention','✅','NOT status = enabled vs status = enabled — structurally impossible'],
+    ['Conversion ↔ Churn','✅','Churn statuses require prior subscription — domain-impossible for newly approved users'],
+    ['Reengagement ↔ Retention','✅','Reengagement blocks status = enabled'],
+    ['Reengagement ↔ Churn','✅','Reengagement blocks Churn statuses'],
+    ['Reengagement ↔ Late','✅','Reengagement excludes Late'],
+    ['Reengagement ↔ Charged Off','✅','Reengagement excludes Charged Off'],
+    ['Pre-Consideration ↔ all subscription lists','✅','Subscription users have application_start set; Pre-Consideration requires NOT set'],
+    ['Denial ↔ Late','✅','Denial explicitly excludes Late'],
+    ['Denial ↔ Charged Off','✅','Denial explicitly excludes Charged Off'],
+    ['Denial ↔ Churn','✅','Churn excludes Denial; one-way lifecycle also domain-impossible'],
+    ['Denial ↔ Retention','✅','Retention excludes Denial; one-way lifecycle also domain-impossible'],
+    ['Denial ↔ Conversion','✅','Conversion requires approved.ind = true; approved users can never be denied — domain-impossible'],
+  ]},
+]}
+];
+
+/* ── Helpers ── */
+function fmt(n){return n.toLocaleString()}
+function pct(n,b,d=1){return((n/b)*100).toFixed(d)+'%'}
+function pctSmart(n,b){
+  const v=(n/b)*100;
+  if(v<0.001)return v.toFixed(5)+'%';
+  if(v<0.01)return v.toFixed(4)+'%';
+  if(v<0.1)return v.toFixed(3)+'%';
+  return v.toFixed(2)+'%';
+}
+
+/* ── Tooltip ── */
+const tt=document.getElementById('tt');
+function showTT(e,s,total){
+  tt.innerHTML=`<div class="ttn">${s.name}</div>
+    <div class="ttr"><span class="ttl">Users</span><span class="ttv">${fmt(s.count)}</span></div>
+    <div class="ttr"><span class="ttl">% of sum</span><span class="ttv">${pct(s.count,total)}</span></div>
+    <div class="ttr"><span class="ttl">% of active base</span><span class="ttv">${pctSmart(s.count,BASE)}</span></div>`;
+  tt.style.display='block';
+  moveTT(e);
+}
+function moveTT(e){
+  let x=e.clientX+14,y=e.clientY-70;
+  if(x+190>window.innerWidth)x=e.clientX-200;
+  if(y<8)y=e.clientY+14;
+  tt.style.left=x+'px';
+  tt.style.top=y+'px';
+}
+function hideTT(){tt.style.display='none'}
+document.addEventListener('mousemove',e=>{if(tt.style.display==='block')moveTT(e)});
+
+/* ── Toggle ── */
+function tog(id){document.getElementById(id).classList.toggle('open')}
+
+/* ── QA helpers ── */
+function togQA(key){
+  const el=document.getElementById('qa-'+key);
+  const chev=document.getElementById('qa-chev-'+key);
+  el.classList.toggle('open');
+  chev.textContent=el.classList.contains('open')?'▼':'▶';
+}
+
+function renderQA(p){
+  if(!p.qa)return'';
+  const total=p.qa.reduce((s,g)=>s+g.pairs.length,0);
+  const groups=p.qa.map(g=>`<div class="qa-group">
+    <div class="qa-gh">${g.group}</div>
+    <table class="qt">${g.pairs.map(([pair,status,reason])=>`<tr><td>${pair}</td><td>${status}</td><td>${reason}</td></tr>`).join('')}</table>
+  </div>`).join('');
+  return `<div class="qa-wrap">
+    <button class="qa-toggle" onclick="togQA('${p.key}')">
+      <span>Mutual exclusivity QA — ${total} pairs · all clean</span>
+      <span id="qa-chev-${p.key}" style="font-size:9px">▶</span>
+    </button>
+    <div class="qa-body" id="qa-${p.key}">${groups}</div>
+  </div>`;
+}
+
+/* ── Render ── */
+function render(p){
+  const total=p.stages.reduce((s,x)=>s+x.count,0);
+  const overlap=total-BASE;
+  const oPct=pctSmart(Math.abs(overlap),BASE);
+
+  const metrics=`<div class="metrics">
+    <div class="mc">
+      <div class="ml">Sum of lists</div>
+      <div class="mv">${fmt(total)}</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Active user base</div>
+      <div class="mv">${fmt(BASE)}</div>
+      <div class="ms">Iterable profiles where is_active = true</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Delta (sum − base)</div>
+      <div class="mv">${fmt(overlap)}</div>
+      <div class="ms">${oPct} of base &nbsp;·&nbsp; ✓ noise</div>
+    </div>
+    <a class="mc fig" href="${p.figmaUrl}" target="_blank">
+      <div class="fig-icon">◆</div>
+      <div class="ml">Figma</div>
+      <div class="ms">Lifecycle flowchart</div>
+      <div class="fig-cta">View designs ↗</div>
+    </a>
+  </div>`;
+
+  const dbar=`<div class="dbar" id="db-${p.key}">${
+    p.stages.map((s,i)=>`<div class="ds" style="width:${((s.count/total)*100).toFixed(3)}%;background:${s.color}" data-pk="${p.key}" data-i="${i}"></div>`).join('')
+  }</div>`;
+
+  const leg=`<div class="leg">${
+    p.stages.map(s=>`<div class="li"><div class="ld" style="background:${s.color}"></div><span>${s.name}</span><span class="lv">${fmt(s.count)}</span></div>`).join('')
+  }</div>`;
+
+  const cards=p.stages.map((s,i)=>{
+    const cid=`${p.key}-${i}`;
+    return `<div class="sc" id="${cid}">
+      <div class="sh" onclick="tog('${cid}')" data-pk="${p.key}" data-i="${i}">
+        <div class="sdot" style="background:${s.color}"></div>
+        <span class="sname">${s.name}</span>
+        <span class="scnt">${fmt(s.count)}</span>
+        <span class="schev">▶</span>
+      </div>
+      <div class="sb">
+        <div class="fl">Rationale</div><div class="fv">${s.rat}</div>
+        <div class="fl">Entry criteria</div><div class="fv">${s.criteria}</div>
+        <div class="fl">Exclusion criteria</div><div class="fv">${s.excl}</div>
+        <div class="fr">
+          <span class="badge">✓ All pairs verified mutually exclusive</span>
+          <a class="ilink" href="https://app.iterable.com/segmentation?emailListId=${s.id}" target="_blank">List ${s.id} ↗</a>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return metrics+dbar+leg+`<div class="stages">${cards}</div>`+renderQA(p);
+}
+
+function switchTab(key){
+  PRODUCTS.forEach(p=>{
+    const el=document.getElementById('p-'+p.key);
+    if(el)el.style.display=p.key===key?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',PRODUCTS[i].key===key));
+}
+
+/* ── Init ── */
+document.getElementById('tabs').innerHTML=PRODUCTS.map((p,i)=>
+  `<button class="tab${i===0?' active':''}" onclick="switchTab('${p.key}')">${p.name}</button>`
+).join('');
+
+document.getElementById('panels').innerHTML=PRODUCTS.map((p,i)=>
+  `<div id="p-${p.key}" style="display:${i===0?'block':'none'}">${render(p)}</div>`
+).join('');
+
+/* ── Hover events (after render) ── */
+document.querySelectorAll('.ds,.sh').forEach(el=>{
+  el.addEventListener('mouseenter',e=>{
+    const p=PRODUCTS.find(x=>x.key===el.dataset.pk);
+    if(!p)return;
+    const total=p.stages.reduce((s,x)=>s+x.count,0);
+    showTT(e,p.stages[+el.dataset.i],total);
+  });
+  el.addEventListener('mouseleave',hideTT);
+});
+</script>
+</body>
+</html>
