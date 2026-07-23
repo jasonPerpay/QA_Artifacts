@@ -19,6 +19,8 @@
   --accent:#378ADD;
   --green:#065f46;
   --green-bg:#d1fae5;
+  --amber:#8a5a08;
+  --amber-bg:#fdf0d5;
   --r:8px;
   --rl:12px;
 }
@@ -34,6 +36,8 @@
     --text3:#6b6760;
     --green:#6ee7b7;
     --green-bg:#064e3b;
+    --amber:#f5c563;
+    --amber-bg:#3d2f11;
   }
 }
 
@@ -97,6 +101,7 @@ body{
 .fl:first-child{margin-top:0}
 .fv{font-size:12px;line-height:1.6;color:var(--text)}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;background:var(--green-bg);color:var(--green);margin-top:8px}
+.badge.amber{background:var(--amber-bg);color:var(--amber)}
 .ilink{font-size:11px;color:var(--accent);text-decoration:none;margin-top:8px;margin-left:10px}
 .ilink:hover{text-decoration:underline}
 .fr{display:flex;align-items:center;flex-wrap:wrap}
@@ -104,12 +109,14 @@ body{
 /* ── Coverage check ── */
 .cov-wrap{margin-top:10px;padding:8px 13px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .cov-l{font-size:11px;color:var(--text2)}
+.cov-note{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.5}
 .cov-r{display:flex;align-items:center;gap:8px}
 
 /* ── QA Section ── */
 .qa-wrap{margin-top:14px}
 .qa-toggle{width:100%;text-align:left;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:9px 13px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);display:flex;justify-content:space-between;align-items:center;transition:background .1s,color .1s}
 .qa-toggle:hover{background:var(--bg3);color:var(--text)}
+.qa-toggle.warn{color:var(--amber)}
 .qa-body{display:none;margin-top:4px;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden}
 .qa-body.open{display:block}
 .qa-group{padding:10px 13px 12px;border-bottom:0.5px solid var(--border);background:var(--bg)}
@@ -120,6 +127,9 @@ body{
 .qt td:first-child{color:var(--text2);font-weight:500;white-space:nowrap;width:32%}
 .qt td:nth-child(2){width:24px;white-space:nowrap}
 .qt td:nth-child(3){color:var(--text)}
+.oi-sev{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--amber)}
+.oi-title{font-size:12px;font-weight:500;color:var(--text);margin:2px 0 4px}
+.oi-text{font-size:11px;line-height:1.55;color:var(--text2)}
 
 /* ── Tooltip ── */
 #tt{
@@ -144,7 +154,7 @@ body{
 
 <div class="ph">
   <span class="pt">Perpay — Unified Lifecycle Lists</span>
-  <span class="ps">QA verified · 27 lists · 3 products · Updated 2026-07-23</span>
+  <span class="ps">QA verified · 28 lists · 3 products · Updated 2026-07-23</span>
 </div>
 
 <div class="tabs" id="tabs"></div>
@@ -152,138 +162,142 @@ body{
 <div id="tt"></div>
 
 <script>
-const BASE=14969336;
+// Active user base — source of truth: Iterable dynamic list 10597483 ("all active users").
+// Refresh via get_list_size(10597483) alongside the stage/coverage counts.
+const BASE=15376452;
+const BASE_LIST=10597483;
 
 const PRODUCTS=[
 {key:'mp',name:'Marketplace',figmaUrl:'https://www.figma.com/board/wKKttSpmH1tvk8GLLjcXym/Unified-Lifecycle-Stages?node-id=2-172&t=HNlbQEOpKqKnd26c-4',
 coverage:{id:10181663,name:'Active user, no Marketplace Lifecycle Segment',count:0},
 stages:[
-  {name:'Pre-Consideration',color:'#888780',id:'10159365',count:1117909,
+  {name:'Pre-Consideration',color:'#888780',id:'10159365',count:1200663,
    rat:'Active Perpay users with no marketplace signals — top-of-funnel for product discovery and awareness. Suitable for introducing Marketplace to users who may not know the product exists.',
-   criteria:'repayment.ind = false; no marketplace signal (signup_flow ≠ marketplace, acquisition.term ∌ marketplacecard, streaming not set, loans not set); active',
-   excl:'NOT in Denial — denied users already blocked by acquisition-signal check; belt-and-suspenders closes edge cases',
-   pairs:[['↔ Consideration','✅','Pre-Consideration requires NOT marketplace signup AND NOT streaming is set — structurally incompatible with Consideration\'s entry signals'],['↔ Conversion','✅','Conversion requires loans is set; Pre-Consideration requires NOT loans is set — structurally impossible'],['↔ Denial','✅','Pre-Consideration explicitly excludes Denial'],['↔ Reengagement','✅','Reengagement requires a marketplace signal; Pre-Consideration requires none — structurally impossible'],['↔ Retention','✅','Retention requires repayment.ind = true; Pre-Consideration requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Pre-Consideration requires repayment.ind = false'],['↔ Late','✅','Pre-purchase users (repayment.ind = false) cannot be delinquent — domain constraint'],['↔ Charged Off','✅','Delinquency requires a loan past the pre-purchase stage — domain constraint']]},
-  {name:'Consideration',color:'#378ADD',id:'9470906',count:609469,
+   criteria:'repayment.ind = false; active; NOT in list 10341505; NOT streaming is set; NOT loans is set',
+   excl:'NOT in Denial — belt-and-suspenders (denied users typically carry marketplace acquisition signals already blocked by the NOT list 10341505 / streaming / loans block)',
+   pairs:[['↔ Consideration','✅','Pre-Consideration\'s NOT block (NOT in 10341505, NOT streaming) blocks all Consideration entry signals — structurally impossible'],['↔ Conversion','✅','Conversion users have loans is set; Pre-Consideration requires NOT loans is set — structurally impossible'],['↔ Denial','✅','Pre-Consideration explicitly excludes Denial'],['↔ Reengagement','✅','Reengagement requires a marketplace signal (list 10341505 / streaming / loans); Pre-Consideration requires none — structurally impossible'],['↔ Retention','✅','Retention requires repayment.ind = true; Pre-Consideration requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Pre-Consideration requires repayment.ind = false'],['↔ Late','✅','Pre-purchase users (repayment.ind = false) cannot be delinquent — domain constraint'],['↔ Charged Off','✅','Delinquency requires a loan past the pre-purchase stage — domain constraint']]},
+  {name:'Consideration',color:'#378ADD',id:'9470906',count:628734,
    rat:'Users with recent purchase intent within the 60d application expiration window. Goal is driving the first checkout and application submission.',
-   criteria:'repayment.ind = false; active; (joined ≤ 60d AND signup_flow = marketplace) OR (joined ≤ 60d AND acquisition.term contains marketplacecard) OR streaming.viewed_products.last_updated ≤ 60d; NOT Conversion entry criteria',
+   criteria:'repayment.ind = false; active; (joined ≤ 60d AND in list 10341505) OR streaming.viewed_products.last_updated ≤ 60d; NOT Conversion entry criteria',
    excl:'NOT in Conversion; NOT in Denial',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration requires NOT marketplace signup AND NOT streaming is set — structurally incompatible with Consideration\'s entry signals'],['↔ Conversion','✅','Consideration explicitly excludes the conversion state (awaiting_pmt ≤ 60d AND awaiting_payment status)'],['↔ Denial','✅','Consideration excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Consideration'],['↔ Retention','✅','Retention requires repayment.ind = true; Consideration requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Consideration requires repayment.ind = false'],['↔ Late','✅','Late is post-purchase (repayment.ind = true); Consideration requires repayment.ind = false'],['↔ Charged Off','✅','CO implies post-purchase; Consideration requires repayment.ind = false']]},
-  {name:'Conversion',color:'#1D9E75',id:'9173736',count:120016,
+   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration\'s NOT block (NOT in 10341505, NOT streaming) blocks all Consideration entry signals — structurally impossible'],['↔ Conversion','✅','Consideration\'s NOT block mirrors Conversion\'s entry conditions exactly — structurally impossible'],['↔ Denial','✅','Consideration excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Consideration'],['↔ Retention','✅','Retention requires repayment.ind = true; Consideration requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Consideration requires repayment.ind = false'],['↔ Late','✅','Late is post-purchase (repayment.ind = true); Consideration requires repayment.ind = false'],['↔ Charged Off','✅','CO implies post-purchase; Consideration requires repayment.ind = false']]},
+  {name:'Conversion',color:'#1D9E75',id:'9173736',count:125042,
    rat:'Users with an approved application who have not yet made their first payment. High-intent moment — goal is first-payment activation.',
    criteria:'repayment.ind = false; active; (awaiting_pmt.most_recent_dt ≤ 60d OR awaiting_pmt.first_dt ≤ 60d) AND loans.status = awaiting_payment',
    excl:'NOT in Denial — exits when repayment made (repayment.ind → true) or approval window lapses',
-   pairs:[['↔ Pre-Consideration','✅','Conversion requires loans is set; Pre-Consideration requires NOT loans is set — structurally impossible'],['↔ Consideration','✅','Consideration explicitly excludes the conversion state (awaiting_pmt ≤ 60d AND awaiting_payment status)'],['↔ Denial','✅','Conversion excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Conversion'],['↔ Retention','✅','Retention requires repayment.ind = true; Conversion requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Conversion requires repayment.ind = false'],['↔ Late','✅','Late is post-purchase (repayment.ind = true); Conversion requires repayment.ind = false'],['↔ Charged Off','✅','loans.status = ChargedOff vs awaiting_payment — mutually exclusive field values']]},
-  {name:'Denial',color:'#E24B4A',id:'10067033',count:52664,
+   pairs:[['↔ Pre-Consideration','✅','Conversion requires loans is set; Pre-Consideration requires NOT loans is set — structurally impossible'],['↔ Consideration','✅','Consideration\'s NOT block mirrors Conversion\'s entry conditions exactly — structurally impossible'],['↔ Denial','✅','Conversion excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Conversion'],['↔ Retention','✅','Retention requires repayment.ind = true; Conversion requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Conversion requires repayment.ind = false'],['↔ Late','✅','loans.status = awaiting_payment vs matchesregex \'late|default\' — single field cannot satisfy both'],['↔ Charged Off','✅','loans.status = awaiting_payment vs current.status = ChargedOff — mutually exclusive field values']]},
+  {name:'Denial',color:'#E24B4A',id:'10067033',count:28234,
    rat:'Users in a 60d post-denial cooling window. Suppressed from acquisition messaging; alternative product suggestions or empathetic re-engagement are appropriate.',
    criteria:'DENIED ≤ 60d; active',
-   excl:'NOT in Late (days_past_due > 0); NOT in Charged Off (current.status = ChargedOff)',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Denial; denied users also blocked by NOT-ANY acquisition-signal check'],['↔ Consideration','✅','Consideration excludes Denial'],['↔ Conversion','✅','Conversion excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Denial'],['↔ Retention','✅','Retention explicitly excludes Denial — closes real gap (active buyer denied on new application)'],['↔ Churn','✅','Churn explicitly excludes Denial — closes real gap (returning buyer denied on new application)'],['↔ Late','✅','Denial excludes Late'],['↔ Charged Off','✅','Denial excludes Charged Off']]},
-  {name:'Reengagement',color:'#BA7517',id:'9555364',count:12599293,
-   rat:'The largest stage (~82% of active users): anyone with marketplace signals aged out of an active funnel stage. Intentionally broad — sub-segmentation by journey will be layered in as strategy matures.',
-   criteria:'repayment.ind = false; active; signup_flow = marketplace OR acquisition.term contains marketplacecard OR streaming is set OR loans is set',
+   excl:'NOT in Late; NOT in Charged Off',
+   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Denial; denied users also carry marketplace signals blocked by the NOT list 10341505 check'],['↔ Consideration','✅','Consideration excludes Denial'],['↔ Conversion','✅','Conversion excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Denial'],['↔ Retention','✅','Retention explicitly excludes Denial — closes real gap (active buyer denied on new application)'],['↔ Churn','✅','Churn explicitly excludes Denial — closes real gap (returning buyer denied on new application)'],['↔ Late','✅','Denial excludes Late'],['↔ Charged Off','✅','Denial excludes Charged Off']]},
+  {name:'Reengagement',color:'#BA7517',id:'9555364',count:12911090,
+   rat:'The largest stage (~86% of active users): anyone with marketplace signals aged out of an active funnel stage. Intentionally broad — sub-segmentation by journey will be layered in as strategy matures.',
+   criteria:'repayment.ind = false; active; in list 10341505 OR streaming is set OR loans is set',
    excl:'NOT in Consideration; NOT in Conversion; NOT in Denial',
-   pairs:[['↔ Pre-Consideration','✅','Opposite marketplace-signal requirement — structurally impossible'],['↔ Consideration','✅','Reengagement excludes Consideration'],['↔ Conversion','✅','Reengagement excludes Conversion'],['↔ Denial','✅','Reengagement excludes Denial'],['↔ Retention','✅','Retention requires repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Late','✅','Late is post-purchase (repayment.ind = true); Reengagement requires repayment.ind = false'],['↔ Charged Off','✅','CO implies repayment.ind = true; Reengagement requires repayment.ind = false']]},
-  {name:'Retention',color:'#639922',id:'9473300',count:121563,
+   pairs:[['↔ Pre-Consideration','✅','Opposite marketplace-signal requirement (list 10341505 / streaming / loans) — structurally impossible'],['↔ Consideration','✅','Reengagement excludes Consideration'],['↔ Conversion','✅','Reengagement excludes Conversion'],['↔ Denial','✅','Reengagement excludes Denial'],['↔ Retention','✅','Retention requires repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Churn','✅','Churn requires repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Late','✅','Late is post-purchase (repayment.ind = true); Reengagement requires repayment.ind = false'],['↔ Charged Off','✅','CO implies repayment.ind = true; Reengagement requires repayment.ind = false']]},
+  {name:'Retention',color:'#639922',id:'9473300',count:119862,
    rat:'Active Marketplace customers within the repurchase window. 180d window reflects the longer repurchase cycle for goods. Goal is upsell, loyalty, and cross-sell.',
    criteria:'repayment.ind = true; repayments.most_recent_dt ≤ 180d OR repayments.first_dt ≤ 180d; active',
    excl:'NOT in Late; NOT in Charged Off; NOT in Denial (closes gap: active buyer denied on new application)',
    pairs:[['↔ Pre-Consideration','✅','Retention requires repayment.ind = true; Pre-Consideration requires repayment.ind = false'],['↔ Consideration','✅','Retention requires repayment.ind = true; Consideration requires repayment.ind = false'],['↔ Conversion','✅','Retention requires repayment.ind = true; Conversion requires repayment.ind = false'],['↔ Denial','✅','Retention explicitly excludes Denial — closes real gap (active buyer denied on new application)'],['↔ Reengagement','✅','Retention requires repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Churn','✅','Churn excludes Retention (higher priority within repayment.ind = true users)'],['↔ Late','✅','Retention excludes Late'],['↔ Charged Off','✅','Retention excludes Charged Off']]},
-  {name:'Churn',color:'#D85A30',id:'9588261',count:117750,
+  {name:'Churn',color:'#D85A30',id:'9588261',count:128149,
    rat:'Lapsed customers aged out of the Retention window. Goal is win-back with compelling offers.',
    criteria:'repayment.ind = true; active',
    excl:'NOT in Retention (repayments ≤ 180d); NOT in Late; NOT in Charged Off; NOT in Denial (closes gap: returning buyer denied on new application)',
    pairs:[['↔ Pre-Consideration','✅','Churn requires repayment.ind = true; Pre-Consideration requires repayment.ind = false'],['↔ Consideration','✅','Churn requires repayment.ind = true; Consideration requires repayment.ind = false'],['↔ Conversion','✅','Churn requires repayment.ind = true; Conversion requires repayment.ind = false'],['↔ Denial','✅','Churn explicitly excludes Denial — closes real gap (returning buyer denied on new application)'],['↔ Reengagement','✅','Churn requires repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Retention','✅','Churn excludes Retention (higher priority within repayment.ind = true users)'],['↔ Late','✅','Churn excludes Late'],['↔ Charged Off','✅','Churn excludes Charged Off']]},
-  {name:'Late',color:'#D4537E',id:'9626770',count:41339,
-   rat:'Currently delinquent customers. All marketing suppressed; payment recovery takes priority.',
-   criteria:'days_past_due > 0; active',
-   excl:'NOT in Charged Off (current.status = ChargedOff)',
-   pairs:[['↔ Pre-Consideration','✅','Late is post-purchase (repayment.ind = true); Pre-Consideration requires repayment.ind = false'],['↔ Consideration','✅','Late is post-purchase (repayment.ind = true); Consideration requires repayment.ind = false'],['↔ Conversion','✅','Late is post-purchase (repayment.ind = true); Conversion requires repayment.ind = false'],['↔ Denial','✅','Denial excludes Late'],['↔ Reengagement','✅','Late is post-purchase (repayment.ind = true); Reengagement requires repayment.ind = false'],['↔ Retention','✅','Retention excludes Late'],['↔ Churn','✅','Churn excludes Late'],['↔ Charged Off','✅','Late excludes Charged Off']]},
-  {name:'Charged Off',color:'#5F5E5A',id:'10168337',count:189337,
+  {name:'Late',color:'#D4537E',id:'9626770',count:45530,
+   rat:'Currently delinquent customers (loans.status = late or default). All marketing suppressed; payment recovery takes priority.',
+   criteria:'loans.status matchesregex \'late|default\'; active',
+   excl:'No explicit Charged Off exclusion needed — loans.status is single-valued per user; \'charged_off\' cannot co-occur with \'late\'/\'default\' (confirmed by list owner)',
+   pairs:[['↔ Pre-Consideration','✅','Late is post-purchase (repayment.ind = true); Pre-Consideration requires repayment.ind = false'],['↔ Consideration','✅','Late is post-purchase (repayment.ind = true); Consideration requires repayment.ind = false'],['↔ Conversion','✅','loans.status = awaiting_payment vs matchesregex \'late|default\' — single field cannot satisfy both'],['↔ Denial','✅','Denial excludes Late'],['↔ Reengagement','✅','Late is post-purchase (repayment.ind = true); Reengagement requires repayment.ind = false'],['↔ Retention','✅','Retention excludes Late'],['↔ Churn','✅','Churn excludes Late'],['↔ Charged Off','✅','Confirmed: a user\'s loans.status cannot be \'charged_off\' simultaneously with \'late\'/\'default\' — single-field mutual exclusivity']]},
+  {name:'Charged Off',color:'#5F5E5A',id:'10168337',count:189157,
    rat:'Terminal delinquency. Suppression only.',
    criteria:'current.status = ChargedOff; active',
    excl:'Terminal state',
-   pairs:[['↔ Pre-Consideration','✅','CO users have loans is set; Pre-Consideration requires NOT loans is set'],['↔ Consideration','✅','CO implies post-purchase; Consideration requires repayment.ind = false'],['↔ Conversion','✅','loans.status = ChargedOff vs awaiting_payment — mutually exclusive field values'],['↔ Denial','✅','Denial excludes Charged Off'],['↔ Reengagement','✅','CO implies repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Retention','✅','Retention excludes Charged Off'],['↔ Churn','✅','Churn excludes Charged Off'],['↔ Late','✅','Late excludes Charged Off']]}
+   pairs:[['↔ Pre-Consideration','✅','CO users have loans is set; Pre-Consideration requires NOT loans is set'],['↔ Consideration','✅','CO implies post-purchase; Consideration requires repayment.ind = false'],['↔ Conversion','✅','current.status = ChargedOff vs loans.status = awaiting_payment — mutually exclusive field values'],['↔ Denial','✅','Denial excludes Charged Off'],['↔ Reengagement','✅','CO implies repayment.ind = true; Reengagement requires repayment.ind = false'],['↔ Retention','✅','Retention excludes Charged Off'],['↔ Churn','✅','Churn excludes Charged Off'],['↔ Late','✅','Confirmed: a user\'s loans.status cannot be \'charged_off\' simultaneously with \'late\'/\'default\' — single-field mutual exclusivity']]}
 ],
 qa:[
   {group:'Pre-purchase funnel',pairs:[
-    ['Consideration ↔ Conversion','✅','Consideration explicitly excludes the conversion state (awaiting_pmt ≤ 60d AND awaiting_payment status)'],
+    ['Consideration ↔ Conversion','✅','Consideration\'s NOT block mirrors Conversion\'s entry conditions exactly — structurally impossible'],
     ['Consideration ↔ Reengagement','✅','Reengagement excludes Consideration'],
-    ['Consideration ↔ Denial','✅','Consideration excludes Denial'],
-    ['Consideration ↔ Pre-Consideration','✅','Pre-Consideration requires NOT marketplace signup AND NOT streaming is set — structurally incompatible with Consideration\'s entry signals'],
+    ['Consideration ↔ Pre-Consideration','✅','All Consideration entry paths (list 10341505, streaming) are blocked by Pre-Consideration\'s NOT-ANY marketplace-signal block'],
     ['Conversion ↔ Reengagement','✅','Reengagement excludes Conversion'],
-    ['Conversion ↔ Denial','✅','Conversion excludes Denial'],
-    ['Conversion ↔ Pre-Consideration','✅','Conversion requires loans is set; Pre-Consideration requires NOT loans is set — structurally impossible'],
-    ['Denial ↔ Reengagement','✅','Reengagement excludes Denial'],
-    ['Denial ↔ Pre-Consideration','✅','Pre-Consideration explicitly excludes Denial'],
-    ['Reengagement ↔ Pre-Consideration','✅','Reengagement requires a marketplace signal; Pre-Consideration requires none — structurally impossible'],
+    ['Conversion ↔ Pre-Consideration','✅','Conversion users have loans is set; Pre-Consideration requires NOT loans is set — structurally impossible'],
+    ['Reengagement ↔ Pre-Consideration','✅','Reengagement requires ≥1 marketplace signal; Pre-Consideration requires none — structurally impossible'],
   ]},
   {group:'Post-purchase funnel',pairs:[
     ['Retention ↔ Churn','✅','Churn excludes Retention (higher priority within repayment.ind = true)'],
     ['Retention ↔ Late','✅','Retention excludes Late'],
     ['Retention ↔ Charged Off','✅','Retention excludes Charged Off'],
-    ['Retention ↔ Denial','✅','Retention explicitly excludes Denial — closes real gap (active buyer denied on new application)'],
     ['Churn ↔ Late','✅','Churn excludes Late'],
     ['Churn ↔ Charged Off','✅','Churn excludes Charged Off'],
-    ['Churn ↔ Denial','✅','Churn explicitly excludes Denial — closes real gap (returning buyer denied on new application)'],
-    ['Late ↔ Charged Off','✅','Late excludes Charged Off'],
-    ['Late ↔ Denial','✅','Denial excludes Late'],
-    ['Charged Off ↔ Denial','✅','Denial excludes Charged Off'],
+    ['Late ↔ Charged Off','✅','Confirmed by list owner: a user\'s loans.status cannot be \'charged_off\' simultaneously with \'late\'/\'default\' — single-field mutual exclusivity'],
   ]},
-  {group:'Cross-funnel (pre-purchase ↔ post-purchase)',pairs:[
-    ['Any pre-purchase ↔ Retention/Churn','✅','Pre-purchase requires NOT repaid; Retention/Churn require repaid — structurally impossible'],
-    ['Pre-purchase ↔ Late','✅','Pre-purchase users (repayment.ind = false) cannot be delinquent — domain constraint confirmed by list owner'],
-    ['Pre-purchase ↔ Charged Off','✅','Same domain constraint — delinquency requires a loan past the pre-purchase stage'],
-    ['Conversion ↔ Late','✅','A user with loans.status = awaiting_payment cannot simultaneously have days_past_due > 0 — same domain constraint'],
+  {group:'Denial & cross-funnel',pairs:[
+    ['Denial ↔ Late','✅','Denial excludes Late'],
+    ['Denial ↔ Charged Off','✅','Denial excludes Charged Off'],
+    ['Denial ↔ Retention','✅','Retention explicitly excludes Denial — closes real gap (active buyer denied on new application)'],
+    ['Denial ↔ Churn','✅','Churn explicitly excludes Denial — closes real gap (returning buyer denied on new application)'],
+    ['Denial ↔ Reengagement/Conversion/Consideration/Pre-Consideration','✅','Each pre-purchase list explicitly excludes Denial'],
+    ['Any pre-purchase ↔ Retention/Churn','✅','Pre-purchase requires repayment.ind = false; Retention/Churn require repayment.ind = true — structurally impossible'],
+    ['Pre-purchase ↔ Late/Charged Off','✅','Pre-purchase users (repayment.ind = false) cannot be delinquent — domain constraint'],
   ]},
-]},
+],
+openItems:[]},
 {key:'cc',name:'Credit Card',figmaUrl:'https://www.figma.com/board/wKKttSpmH1tvk8GLLjcXym/Unified-Lifecycle-Stages?node-id=142-272&t=HNlbQEOpKqKnd26c-4',
-coverage:{id:10209723,name:'Active user, no CC Lifecycle Segment',count:0},
+coverage:{id:10209723,name:'Active user, no CC Lifecycle Segment',count:0,note:'Coverage list updated to include the Terminated stage — gap resolved (back to 0). Pre-Consideration is audience-gated to list 10341505 (Marketplace-signup users only) — confirmed intended design; non-10341505 users with no CC engagement are intentionally uncaptured.'},
 stages:[
-  {name:'Pre-Consideration',color:'#888780',id:'10159636',count:10040027,
-   rat:'Active Perpay users with no Credit Card signals — top-of-funnel for CC awareness and discovery.',
-   criteria:'NOT (signup_flow matches hosted_model_signup|card OR started_card_appliaction.ind = true); NOT provisioned.ind = true; active',
-   excl:'NOT in Consideration; NOT in Conversion — denied users already structurally blocked by started_card_appliaction.ind signal',
-   pairs:[['↔ Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','Pre-Consideration excludes Conversion'],['↔ Denial','✅','Denied users have started_card_appliaction.ind = true — blocked by NOT-ANY acquisition signal without explicit Denial exclusion'],['↔ Reengagement','✅','Opposite CC acquisition signal requirement — structurally impossible'],['↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','SUSPENDED presupposes provisioning; Pre-Consideration requires NOT provisioned.ind — domain-impossible'],['↔ Charged Off','✅','CHARGED_OFF presupposes provisioning; Pre-Consideration requires NOT provisioned.ind — domain-impossible'],['↔ Churn','✅','NOT provisioned.ind vs provisioned.ind required by Churn — structurally impossible']]},
-  {name:'Consideration',color:'#378ADD',id:'9174004',count:108160,
-   rat:'Users with recent CC intent within 60d. Two entry paths: CC signup and application start can be the same event or sequential steps. Goal is application completion.',
-   criteria:'(started_card_appliaction.dt ≤ 60d) OR (date_joined ≤ 60d AND signup_flow matches CC); NOT approved.ind = true; active',
+  {name:'Pre-Consideration',color:'#888780',id:'10159636',count:11171204,
+   rat:'Perpay users in the Marketplace-signup audience (list 10341505) with no Credit Card signals — top-of-funnel for CC awareness. Now audience-gated: CC lifecycle messaging targets only the 10341505 audience.',
+   criteria:'in list 10341505; NOT started_card_appliaction.ind = true; NOT submitted_card_application.ind = true; NOT provisioned.ind = true; active',
+   excl:'NOT in Consideration; NOT in Conversion; NOT in Denial (belt-and-suspenders — denied users already carry started_card_appliaction.ind)',
+   pairs:[['↔ Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','Pre-Consideration excludes Conversion'],['↔ Denial','✅','Pre-Consideration explicitly excludes Denial; denied users also carry started_card_appliaction.ind = true, blocked by NOT(started_app)'],['↔ Reengagement','✅','Lists 10341557 and 10341505 are mutually exclusive inverses; Ree\'s started/submitted-app paths are blocked by PC\'s NOT(started_app)/NOT(submitted_app) — structurally clean'],['↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','SUSPENDED presupposes provisioning; PC requires NOT provisioned.ind — domain-impossible'],['↔ Charged Off','✅','CHARGED_OFF presupposes provisioning; PC requires NOT provisioned.ind — domain-impossible'],['↔ Terminated','✅','TERMINATED presupposes provisioning; PC requires NOT provisioned.ind — domain-impossible'],['↔ Churn','✅','NOT provisioned.ind vs provisioned.ind required by Churn — structurally impossible']]},
+  {name:'Consideration',color:'#378ADD',id:'9174004',count:127123,
+   rat:'Users with recent CC intent within 60d — either recently started an application, or recently joined via the CC acquisition channel (list 10341557). Goal is application completion.',
+   criteria:'(started_card_appliaction.most_recent_dt ≤ 60d) OR (joined ≤ 60d AND in list 10341557); NOT approved.ind = true; active',
    excl:'NOT in Denial',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','NOT approved.ind vs approved.most_recent_dt — structurally impossible'],['↔ Denial','✅','Consideration excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Consideration'],['↔ Retention','✅','NOT approved.ind; provisioned.ind requires prior approval — domain chain impossible'],['↔ Late','✅','SUSPENDED presupposes provisioning which presupposes approval; NOT approved.ind — domain chain'],['↔ Charged Off','✅','Same domain chain as Late — CHARGED_OFF presupposes approval chain'],['↔ Churn','✅','Churn requires provisioned.ind which requires approval; NOT approved.ind — domain-impossible']]},
-  {name:'Conversion',color:'#1D9E75',id:'9173908',count:88817,
+   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','NOT approved.ind vs approved.most_recent_dt (implies approved.ind) — structurally impossible'],['↔ Denial','✅','Consideration excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Consideration'],['↔ Retention','✅','NOT approved.ind; provisioned.ind requires prior approval — domain chain impossible'],['↔ Late','✅','SUSPENDED presupposes provisioning → approval; NOT approved.ind — domain chain'],['↔ Charged Off','✅','Same domain chain — CHARGED_OFF presupposes approval'],['↔ Terminated','✅','TERMINATED presupposes provisioning → approval; NOT approved.ind — domain chain'],['↔ Churn','✅','Churn requires provisioned.ind (→ approval); NOT approved.ind — domain-impossible']]},
+  {name:'Conversion',color:'#1D9E75',id:'9173908',count:94391,
    rat:'Approved applicants whose card has not yet been provisioned. Goal is driving card setup and onboarding completion.',
    criteria:'approved.most_recent_dt ≤ 60d; NOT provisioned.ind = true; active',
    excl:'No Denial exclusion — one-way lifecycle means approved users can never be denied again',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],['↔ Consideration','✅','NOT approved.ind vs approved.most_recent_dt — structurally impossible'],['↔ Denial','✅','One-way lifecycle — approved users can never be denied again; Denial also excludes Conversion'],['↔ Reengagement','✅','Reengagement excludes Conversion'],['↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Charged Off','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Churn','✅','NOT provisioned.ind vs provisioned.ind required by Churn — structurally impossible']]},
-  {name:'Denial',color:'#E24B4A',id:'10067046',count:745126,
-   rat:'60d post-denial cooling window. Conversion holdout handles users who reapplied and were approved shortly after denial. Alternative product messaging appropriate.',
+   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],['↔ Consideration','✅','NOT approved.ind vs approved.most_recent_dt — structurally impossible'],['↔ Denial','✅','One-way lifecycle — approved users can never be denied again; Denial also excludes Conversion'],['↔ Reengagement','✅','Reengagement excludes Conversion'],['↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Charged Off','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Terminated','✅','NOT provisioned.ind; TERMINATED presupposes provisioning — structural/domain impossible'],['↔ Churn','✅','NOT provisioned.ind vs provisioned.ind required by Churn — structurally impossible']]},
+  {name:'Denial',color:'#E24B4A',id:'10067046',count:220692,
+   rat:'60d post-denial cooling window. Alternative product messaging appropriate. Post-provisioning pairs are domain-protected (denied users never receive a card).',
    criteria:'current.decision = DENIED AND current.dt ≤ 60d; active',
-   excl:'NOT in Conversion — post-provisioning pairs domain-protected (denied users never receive a card)',
-   pairs:[['↔ Pre-Consideration','✅','Denied users have started_card_appliaction.ind = true — blocked by NOT-ANY acquisition signal'],['↔ Consideration','✅','Consideration excludes Denial'],['↔ Conversion','✅','Denial excludes Conversion'],['↔ Reengagement','✅','Reengagement excludes Denial'],['↔ Retention','✅','Domain-protected: denied users never provisioned; Retention requires provisioned.ind (no explicit exclusion)'],['↔ Late','✅','SUSPENDED requires a physical card; denied users never receive one — domain-protected only'],['↔ Charged Off','✅','CHARGED_OFF requires a physical card; denied users never receive one — domain-protected only'],['↔ Churn','✅','Churn requires provisioned.ind = true; denied users never provisioned — domain-protected only']]},
-  {name:'Reengagement',color:'#BA7517',id:'9625161',count:3791202,
-   rat:'Users who showed CC interest but have not provisioned and whose active funnel windows have expired. Re-engagement with the card application is the primary lever.',
-   criteria:'signup_flow matches hosted_model_signup|card OR started_card_appliaction.ind = true; NOT provisioned.ind = true; active',
+   excl:'NOT in Conversion — post-provisioning pairs domain-protected (denied users never receive a card; no explicit exclusion)',
+   pairs:[['↔ Pre-Consideration','✅','Denied users have started_card_appliaction.ind = true — blocked by NOT(started_app); PC also explicitly excludes Denial'],['↔ Consideration','✅','Consideration excludes Denial'],['↔ Conversion','✅','Denial excludes Conversion'],['↔ Reengagement','✅','Reengagement excludes Denial'],['↔ Retention','✅','Domain-protected: denied users never provisioned; Retention requires provisioned.ind (no explicit exclusion)'],['↔ Late','✅','SUSPENDED requires a physical card; denied users never receive one — domain-protected only'],['↔ Charged Off','✅','CHARGED_OFF requires a physical card; denied users never receive one — domain-protected only'],['↔ Terminated','✅','TERMINATED requires a card to exist; denied users never receive one — domain-protected only'],['↔ Churn','✅','Churn requires provisioned.ind = true; denied users never provisioned — domain-protected only']]},
+  {name:'Reengagement',color:'#BA7517',id:'9625161',count:3559772,
+   rat:'Users with CC intent who have not provisioned and whose active funnel windows have expired. Three entry paths: CC acquisition channel (10341557), or started/submitted a CC application while in the Marketplace-signup audience (10341505).',
+   criteria:'(in list 10341557) OR (started_card_appliaction.ind = true AND in list 10341505) OR (submitted_card_application.ind = true AND in list 10341505); NOT provisioned.ind = true; active',
    excl:'NOT in Consideration; NOT in Conversion; NOT in Denial',
-   pairs:[['↔ Pre-Consideration','✅','Opposite CC acquisition signal requirement — structurally impossible'],['↔ Consideration','✅','Reengagement excludes Consideration'],['↔ Conversion','✅','Reengagement excludes Conversion'],['↔ Denial','✅','Reengagement excludes Denial'],['↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Charged Off','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Churn','✅','NOT provisioned.ind vs provisioned.ind required by Churn — structurally impossible']]},
-  {name:'Retention',color:'#639922',id:'9473626',count:95809,
+   pairs:[['↔ Pre-Consideration','✅','Lists 10341557 and 10341505 are mutually exclusive inverses; Ree\'s started/submitted-app paths are blocked by PC\'s NOT(started_app)/NOT(submitted_app) — structurally clean'],['↔ Consideration','✅','Reengagement excludes Consideration'],['↔ Conversion','✅','Reengagement excludes Conversion'],['↔ Denial','✅','Reengagement excludes Denial'],['↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Charged Off','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Terminated','✅','NOT provisioned.ind; TERMINATED presupposes provisioning — structural/domain impossible'],['↔ Churn','✅','NOT provisioned.ind vs provisioned.ind required by Churn — structurally impossible']]},
+  {name:'Retention',color:'#639922',id:'9473626',count:87511,
    rat:'Active cardholders within the 30d transaction window. 30d reflects expected monthly CC transaction frequency. Goal is engagement, spend velocity, and cross-sell.',
    criteria:'provisioned.ind = true; lifetime_transactions.most_recent_dt ≤ 30d; active',
-   excl:'NOT in Late (card_status = SUSPENDED); NOT in Charged Off',
-   pairs:[['↔ Pre-Consideration','✅','provisioned.ind vs NOT provisioned.ind — structurally impossible'],['↔ Consideration','✅','provisioned.ind requires prior approval; Consideration requires NOT approved.ind — domain chain'],['↔ Conversion','✅','provisioned.ind vs NOT provisioned.ind required by Conversion — structurally impossible'],['↔ Denial','✅','Domain-protected: denied users never provisioned; no explicit Denial exclusion on Retention'],['↔ Reengagement','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','Retention excludes Late'],['↔ Charged Off','✅','Retention excludes Charged Off'],['↔ Churn','✅','Churn excludes Retention (higher priority within provisioned.ind = true users)']]},
-  {name:'Late',color:'#D4537E',id:'9626795',count:46041,
-   rat:'Cardholders who have missed a payment. All marketing suppressed; payment recovery takes priority.',
+   excl:'NOT in Late; NOT in Charged Off; NOT in Terminated',
+   pairs:[['↔ Pre-Consideration','✅','provisioned.ind vs NOT provisioned.ind — structurally impossible'],['↔ Consideration','✅','provisioned.ind requires prior approval; Consideration requires NOT approved.ind — domain chain'],['↔ Conversion','✅','provisioned.ind vs NOT provisioned.ind required by Conversion — structurally impossible'],['↔ Denial','✅','Domain-protected: denied users never provisioned; no explicit Denial exclusion on Retention'],['↔ Reengagement','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Late','✅','Retention excludes Late'],['↔ Charged Off','✅','Retention excludes Charged Off'],['↔ Terminated','✅','Retention explicitly excludes Terminated'],['↔ Churn','✅','Churn excludes Retention (higher priority within provisioned.ind = true users)']]},
+  {name:'Late',color:'#D4537E',id:'9626795',count:58817,
+   rat:'Cardholders who have missed a payment (card_status = SUSPENDED). All marketing suppressed; payment recovery takes priority.',
    criteria:'card_status = SUSPENDED; active',
-   excl:'SUSPENDED and CHARGED_OFF are mutually exclusive — structural separation, no additional exclusion required',
-   pairs:[['↔ Pre-Consideration','✅','SUSPENDED presupposes provisioning; Pre-Consideration requires NOT provisioned.ind — domain-impossible'],['↔ Consideration','✅','SUSPENDED presupposes provisioning which presupposes approval; NOT approved.ind — domain chain'],['↔ Conversion','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Denial','✅','SUSPENDED requires a physical card; denied users never provisioned — domain-protected only'],['↔ Reengagement','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Retention','✅','Retention excludes Late'],['↔ Charged Off','✅','SUSPENDED vs CHARGED_OFF — single card_status field cannot satisfy both simultaneously'],['↔ Churn','✅','Churn excludes Late']]},
-  {name:'Charged Off',color:'#5F5E5A',id:'10168495',count:39906,
-   rat:'Terminal card delinquency. Suppression only.',
-   criteria:'card_status contains CHARGED_OFF; active',
+   excl:'SUSPENDED is mutually exclusive with CHARGED_OFF and TERMINATED — structural card_status separation, no additional exclusion required',
+   pairs:[['↔ Pre-Consideration','✅','SUSPENDED presupposes provisioning; Pre-Consideration requires NOT provisioned.ind — domain-impossible'],['↔ Consideration','✅','SUSPENDED presupposes provisioning → approval; NOT approved.ind — domain chain'],['↔ Conversion','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Denial','✅','SUSPENDED requires a physical card; denied users never provisioned — domain-protected only'],['↔ Reengagement','✅','NOT provisioned.ind; SUSPENDED presupposes provisioning — structural/domain impossible'],['↔ Retention','✅','Retention excludes Late'],['↔ Charged Off','✅','card_status = SUSPENDED vs CHARGED_OFF — single field cannot satisfy both simultaneously'],['↔ Terminated','✅','card_status = SUSPENDED vs TERMINATED — single field mutual exclusivity'],['↔ Churn','✅','Churn excludes Late']]},
+  {name:'Charged Off',color:'#5F5E5A',id:'10168495',count:43110,
+   rat:'Terminal card delinquency — uncollectible debt. Suppression only.',
+   criteria:'card_status = CHARGED_OFF; active',
    excl:'Terminal card status',
-   pairs:[['↔ Pre-Consideration','✅','CHARGED_OFF presupposes provisioning; Pre-Consideration requires NOT provisioned.ind — domain-impossible'],['↔ Consideration','✅','CHARGED_OFF presupposes provisioning which presupposes approval; NOT approved.ind — domain chain'],['↔ Conversion','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Denial','✅','CHARGED_OFF requires a physical card; denied users never provisioned — domain-protected only'],['↔ Reengagement','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Retention','✅','Retention excludes Charged Off'],['↔ Late','✅','SUSPENDED vs CHARGED_OFF — single card_status field cannot satisfy both simultaneously'],['↔ Churn','✅','Churn excludes Charged Off']]},
-  {name:'Churn',color:'#D85A30',id:'9625195',count:14293,
+   pairs:[['↔ Pre-Consideration','✅','CHARGED_OFF presupposes provisioning; Pre-Consideration requires NOT provisioned.ind — domain-impossible'],['↔ Consideration','✅','CHARGED_OFF presupposes provisioning → approval; NOT approved.ind — domain chain'],['↔ Conversion','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Denial','✅','CHARGED_OFF requires a physical card; denied users never provisioned — domain-protected only'],['↔ Reengagement','✅','NOT provisioned.ind; CHARGED_OFF presupposes provisioning — structural/domain impossible'],['↔ Retention','✅','Retention excludes Charged Off'],['↔ Late','✅','card_status = SUSPENDED vs CHARGED_OFF — single field cannot satisfy both simultaneously'],['↔ Terminated','✅','card_status = CHARGED_OFF vs TERMINATED — single field mutual exclusivity'],['↔ Churn','✅','Churn excludes Charged Off']]},
+  {name:'Terminated',color:'#6E4B8A',id:'10587440',count:5914,
+   rat:'Permanent card closure — a clean account closure, distinct from Charged Off\'s uncollectible debt. Terminal post-provisioning state; suppression only. New 10th CC lifecycle list.',
+   criteria:'card_status = TERMINATED; active',
+   excl:'Terminal card status',
+   pairs:[['↔ Pre-Consideration','✅','TERMINATED presupposes provisioning; Pre-Consideration requires NOT provisioned.ind — domain-impossible'],['↔ Consideration','✅','TERMINATED presupposes provisioning → approval; Consideration requires NOT approved.ind — domain chain'],['↔ Conversion','✅','NOT provisioned.ind; TERMINATED presupposes provisioning — structural/domain impossible'],['↔ Denial','✅','TERMINATED requires a card to exist; denied users never receive one — domain-protected only'],['↔ Reengagement','✅','NOT provisioned.ind; TERMINATED presupposes provisioning — structural/domain impossible'],['↔ Retention','✅','Retention explicitly excludes Terminated'],['↔ Late','✅','card_status = TERMINATED vs SUSPENDED — single field mutual exclusivity'],['↔ Charged Off','✅','card_status = TERMINATED vs CHARGED_OFF — single field mutual exclusivity'],['↔ Churn','✅','Churn explicitly excludes Terminated']]},
+  {name:'Churn',color:'#D85A30',id:'9625195',count:8008,
    rat:'Provisioned cardholders no longer actively using their card. Note: newly provisioned zero-transaction users also land here (no dedicated onboarding stage). Goal is re-engagement.',
    criteria:'provisioned.ind = true; active',
-   excl:'NOT in Retention (lifetime_transactions.most_recent_dt ≤ 30d); NOT in Late; NOT in Charged Off',
-   pairs:[['↔ Pre-Consideration','✅','provisioned.ind vs NOT provisioned.ind — structurally impossible'],['↔ Consideration','✅','provisioned.ind requires prior approval; Consideration requires NOT approved.ind — domain-impossible'],['↔ Conversion','✅','provisioned.ind vs NOT provisioned.ind required by Conversion — structurally impossible'],['↔ Denial','✅','Domain-protected: denied users never provisioned; no explicit Denial exclusion on Churn'],['↔ Reengagement','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Retention','✅','Churn excludes Retention (higher priority within provisioned.ind = true users)'],['↔ Late','✅','Churn excludes Late'],['↔ Charged Off','✅','Churn excludes Charged Off']]}
+   excl:'NOT in Retention (lifetime_transactions.most_recent_dt ≤ 30d); NOT in Late; NOT in Charged Off; NOT in Terminated',
+   pairs:[['↔ Pre-Consideration','✅','provisioned.ind vs NOT provisioned.ind — structurally impossible'],['↔ Consideration','✅','provisioned.ind requires prior approval; Consideration requires NOT approved.ind — domain-impossible'],['↔ Conversion','✅','provisioned.ind vs NOT provisioned.ind required by Conversion — structurally impossible'],['↔ Denial','✅','Domain-protected: denied users never provisioned; no explicit Denial exclusion on Churn'],['↔ Reengagement','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],['↔ Retention','✅','Churn excludes Retention (higher priority within provisioned.ind = true users)'],['↔ Late','✅','Churn excludes Late'],['↔ Charged Off','✅','Churn excludes Charged Off'],['↔ Terminated','✅','Churn explicitly excludes Terminated']]}
 ],
 qa:[
   {group:'Pre-provisioning funnel',pairs:[
@@ -295,11 +309,15 @@ qa:[
     ['Conversion ↔ Reengagement','✅','Reengagement excludes Conversion'],
     ['Conversion ↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],
     ['Denial ↔ Reengagement','✅','Reengagement excludes Denial'],
-    ['Denial ↔ Pre-Consideration','✅','Denied users have started_card_appliaction.ind = true — blocked by NOT-ANY acquisition signal'],
-    ['Reengagement ↔ Pre-Consideration','✅','Opposite CC acquisition signal requirement — structurally impossible'],
+    ['Denial ↔ Pre-Consideration','✅','Denied users have started_card_appliaction.ind = true — blocked by NOT(started_app); PC also excludes Denial'],
+    ['Reengagement ↔ Pre-Consideration','✅','Lists 10341557 and 10341505 are mutually exclusive inverses; all three Ree entry paths blocked from PC by NOT(started_app)/NOT(submitted_app)'],
   ]},
   {group:'Post-provisioning funnel',pairs:[
-    ['Charged Off ↔ Late','✅','SUSPENDED vs CHARGED_OFF — single field cannot satisfy both'],
+    ['Terminated ↔ Late','✅','card_status = TERMINATED vs SUSPENDED — single field mutual exclusivity'],
+    ['Terminated ↔ Charged Off','✅','card_status = TERMINATED vs CHARGED_OFF — single field mutual exclusivity'],
+    ['Terminated ↔ Retention','✅','Retention explicitly excludes Terminated'],
+    ['Terminated ↔ Churn','✅','Churn explicitly excludes Terminated'],
+    ['Charged Off ↔ Late','✅','card_status = SUSPENDED vs CHARGED_OFF — single field, cannot satisfy both'],
     ['Charged Off ↔ Retention','✅','Retention excludes Charged Off'],
     ['Charged Off ↔ Churn','✅','Churn excludes Charged Off'],
     ['Late ↔ Retention','✅','Retention excludes Late'],
@@ -309,99 +327,105 @@ qa:[
   {group:'Denial ↔ post-provisioning',pairs:[
     ['Denial ↔ Retention','✅','Domain-protected only: denied users never receive a card (no explicit exclusion exists)'],
     ['Denial ↔ Late','✅','SUSPENDED requires a physical card; denied users never receive one — domain-protected only'],
-    ['Denial ↔ Charged Off','✅','Same as Denial ↔ Late — domain-protected only'],
+    ['Denial ↔ Charged Off','✅','CHARGED_OFF requires a physical card; denied users never receive one — domain-protected only'],
+    ['Denial ↔ Terminated','✅','TERMINATED requires a card to exist; denied users never receive one — domain-protected only'],
     ['Denial ↔ Churn','✅','Churn requires provisioned.ind = true; denied users are never provisioned — domain-protected only'],
   ]},
   {group:'Cross-funnel (pre-provisioning ↔ post-provisioning)',pairs:[
     ['Pre-Consideration ↔ Retention/Churn','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],
-    ['Pre-Consideration ↔ Late/CO','✅','SUSPENDED/CHARGED_OFF presuppose provisioning — domain-impossible'],
-    ['Consideration ↔ Retention/Late/CO/Churn','✅','NOT approved.ind vs provisioning chain — domain-impossible'],
+    ['Pre-Consideration ↔ Late/CO/Terminated','✅','SUSPENDED/CHARGED_OFF/TERMINATED presuppose provisioning — domain-impossible'],
+    ['Consideration ↔ Retention/Late/CO/Terminated/Churn','✅','NOT approved.ind vs provisioning chain — domain-impossible'],
     ['Conversion ↔ Retention','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],
-    ['Conversion ↔ Late/CO/Churn','✅','NOT provisioned.ind vs post-provisioning statuses — structural/domain-impossible'],
-    ['Reengagement ↔ Retention/Late/CO/Churn','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],
+    ['Conversion ↔ Late/CO/Terminated/Churn','✅','NOT provisioned.ind vs post-provisioning statuses — structural/domain-impossible'],
+    ['Reengagement ↔ Retention/Late/CO/Terminated/Churn','✅','NOT provisioned.ind vs provisioned.ind — structurally impossible'],
   ]},
-]},
+],
+openItems:[]},
 {key:'pp',name:'Perpay+',figmaUrl:'https://www.figma.com/board/wKKttSpmH1tvk8GLLjcXym/Unified-Lifecycle-Stages?node-id=142-513&t=HNlbQEOpKqKnd26c-4',
-coverage:{id:10210209,name:'Active user, no PP+ Lifecycle Segment',count:0},
+coverage:{id:10210209,name:'Active user, no PP+ Lifecycle Segment',count:0,note:'Gap resolved (back to 0). Pre-Consideration now also captures unset current_backend_status users via list 10597489, absorbing the ~13k empty-status population that previously fell through.'},
 stages:[
-  {name:'Pre-Consideration',color:'#888780',id:'10159789',count:11203369,
-   rat:'Active Perpay users who have never started a Perpay+ application — top-of-funnel for PP+ awareness and discovery.',
-   criteria:'application_start NOT set; active',
-   excl:'NOT status = enabled/canceled/pending_cancellation; NOT in Consideration; NOT in Conversion; NOT in Late; NOT in Denial',
-   pairs:[['↔ Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','Pre-Consideration excludes Conversion'],['↔ Denial','✅','Pre-Consideration excludes Denial'],['↔ Reengagement','✅','Opposite application_start requirement — Pre-Consideration: NOT set; Reengagement: is set — structurally impossible'],['↔ Retention','✅','Subscription users have application_start is set; Pre-Consideration requires NOT set — structurally impossible'],['↔ Late','✅','Pre-Consideration excludes Late; subscription context requires application_start — structurally impossible'],['↔ Charged Off','✅','Subscription-status users have application_start is set; Pre-Consideration requires NOT set — structurally impossible'],['↔ Churn','✅','Churn statuses require prior subscription with application_start; Pre-Consideration requires NOT set — structurally impossible']]},
-  {name:'Consideration',color:'#378ADD',id:'9531607',count:46570,
-   rat:'Users who recently started a Perpay+ application (within 60d). Goal is application completion and submission.',
-   criteria:'application_start.most_recent_dt ≤ 60d; NOT approved.ind; active',
-   excl:'NOT in Denial',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','NOT approved.ind vs approved.ind — structurally impossible'],['↔ Denial','✅','Consideration excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Consideration'],['↔ Retention','✅','status = enabled requires prior approval; NOT approved.ind — domain chain impossible'],['↔ Late','✅','days_past_due > 0 requires active subscription which requires approval; NOT approved.ind — domain chain'],['↔ Charged Off','✅','charged_off.ind = true requires subscription context which requires approval; NOT approved.ind — domain chain'],['↔ Churn','✅','Re-application while subscribed is not a valid user state — domain-impossible (no explicit list exclusion)']]},
-  {name:'Conversion',color:'#1D9E75',id:'9467081',count:66914,
-   rat:'Approved users who have not yet activated their first payment cycle. Goal is first payment activation.',
-   criteria:'approved.ind AND approved.most_recent_dt ≤ 60d; NOT status = enabled; active; NOT in Denial',
-   excl:'NOT in Denial (explicit); approved users also protected by one-way lifecycle',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],['↔ Consideration','✅','NOT approved.ind vs approved.ind — structurally impossible'],['↔ Denial','✅','Conversion excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Conversion'],['↔ Retention','✅','NOT status = enabled vs status = enabled — structurally impossible'],['↔ Late','✅','NOT status = enabled; days_past_due > 0 requires active subscription (enabled status) — domain-impossible'],['↔ Charged Off','✅','NOT status = enabled; charged_off.ind = true requires subscription context — domain-impossible'],['↔ Churn','✅','NOT status = enabled; Churn statuses require prior enabled subscription — domain-impossible for newly approved users']]},
-  {name:'Denial',color:'#E24B4A',id:'10067066',count:56043,
+  {name:'Pre-Consideration',color:'#888780',id:'10159789',count:10836318,
+   rat:'Active Perpay users who have never started or submitted a Perpay+ application — top-of-funnel for PP+ awareness and discovery. Now also captures users whose current_backend_status is unset (list 10597489), closing the former empty-status coverage gap.',
+   criteria:'NOT application_start.ind; NOT application_submit.ind; (status = \'\' OR in list 10597489 [current_backend_status not set]); active',
+   excl:'NOT in Consideration; NOT in Conversion; NOT in Late; NOT in Charged Off; NOT in Denial',
+   pairs:[['↔ Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','Pre-Consideration excludes Conversion'],['↔ Denial','✅','Pre-Consideration excludes Denial'],['↔ Reengagement','✅','Opposite application signal — PC: NOT(start.ind) AND NOT(submit.ind); Ree: start.ind OR submit.ind — structurally impossible'],['↔ Retention','✅','PC requires status = \'\' or unset; Retention requires status = enabled — structurally impossible'],['↔ Late','✅','PC requires status = \'\' or unset and explicitly excludes Late; Late requires status = disabled — structurally impossible'],['↔ Charged Off','✅','PC requires status = \'\' or unset and explicitly excludes Charged Off; charged_off.ind requires prior subscription'],['↔ Churn','✅','PC requires status = \'\' or unset; Churn requires status = canceled/pending_cancellation — structurally impossible']]},
+  {name:'Consideration',color:'#378ADD',id:'9531607',count:45740,
+   rat:'Users who recently started or submitted a Perpay+ application (within 60d). Goal is application completion and submission.',
+   criteria:'(application_start.most_recent_dt ≤ 60d OR application_submit.most_recent_dt ≤ 60d); status = \'\'; active',
+   excl:'NOT in Conversion; NOT in Denial',
+   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Consideration'],['↔ Conversion','✅','Consideration excludes Conversion; status = \'\' also blocks Conversion\'s opted_in/pending paths'],['↔ Denial','✅','Consideration excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Consideration'],['↔ Retention','✅','status = \'\' vs status = enabled — structurally impossible'],['↔ Late','✅','Consideration requires status = \'\'; Late requires status = disabled — structurally impossible'],['↔ Charged Off','✅','status = \'\'; charged_off.ind requires a subscription — domain-impossible'],['↔ Churn','✅','status = \'\' vs canceled/pending_cancellation — structurally impossible']]},
+  {name:'Conversion',color:'#1D9E75',id:'9467081',count:1237083,
+   rat:'The full pre-enablement population: approved-but-not-yet-enabled users plus intermediate opted_in and pending states. Multi-path entry captures all three. Goal is first-payment activation / enablement. (Large count reflects the added opted_in/pending paths.)',
+   criteria:'(approved.ind AND approved.most_recent_dt ≤ 60d AND status = \'\') OR (status = \'opted_in\') OR (status = \'pending\'); active',
+   excl:'NOT in Denial (explicit; approved users also protected by one-way lifecycle)',
+   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],['↔ Consideration','✅','Consideration excludes Conversion; status = \'\' blocks opted_in/pending'],['↔ Denial','✅','Conversion excludes Denial; one-way lifecycle — approved users never denied'],['↔ Reengagement','✅','Reengagement excludes Conversion'],['↔ Retention','✅','Conversion status ∈ {\'\', opted_in, pending}; Retention requires enabled — structurally impossible'],['↔ Late','✅','Conversion status ∈ {\'\', opted_in, pending}; Late requires status = disabled — structurally impossible'],['↔ Charged Off','✅','charged_off.ind requires a subscription; Conversion is pre-enablement — domain-impossible'],['↔ Churn','✅','Churn requires canceled/pending_cancellation; Conversion has none (pending ≠ pending_cancellation) — structural/domain']]},
+  {name:'Denial',color:'#E24B4A',id:'10067066',count:28658,
    rat:'60d post-denial cooling window. Suppressed from PP+ acquisition messaging; Marketplace cross-sell appropriate.',
    criteria:'Perpay+ DENIED ≤ 60d; active',
-   excl:'No outbound list exclusions — subscription-list pairs are domain-protected by one-way lifecycle',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Denial'],['↔ Consideration','✅','Consideration excludes Denial'],['↔ Conversion','✅','Conversion excludes Denial'],['↔ Reengagement','✅','Reengagement excludes Denial'],['↔ Retention','✅','One-way lifecycle — any user in a subscription-status list was previously approved, ruling out Denial permanently'],['↔ Late','✅','One-way lifecycle — any user in a subscription-status list was previously approved, ruling out Denial permanently'],['↔ Charged Off','✅','One-way lifecycle — any user in a subscription-status list was previously approved, ruling out Denial permanently'],['↔ Churn','✅','One-way lifecycle — any user in a subscription-status list was previously approved, ruling out Denial permanently']]},
-  {name:'Reengagement',color:'#BA7517',id:'9625797',count:744593,
-   rat:'Users who have started a PP+ application but have never been enabled, and whose active funnel windows have expired. Re-application encouragement is the primary lever.',
-   criteria:'application_start is set; active',
-   excl:'NOT status = enabled/canceled/pending_cancellation; NOT in Consideration; NOT in Conversion; NOT in Late; NOT in Charged Off; NOT in Denial',
-   pairs:[['↔ Pre-Consideration','✅','Opposite application_start requirement — structurally impossible'],['↔ Consideration','✅','Reengagement excludes Consideration'],['↔ Conversion','✅','Reengagement excludes Conversion'],['↔ Denial','✅','Reengagement excludes Denial'],['↔ Retention','✅','Reengagement blocks status = enabled; Retention requires status = enabled — structurally impossible'],['↔ Late','✅','Reengagement excludes Late'],['↔ Charged Off','✅','Reengagement excludes Charged Off'],['↔ Churn','✅','Reengagement blocks canceled/pending_cancellation — structurally impossible']]},
-  {name:'Retention',color:'#639922',id:'9625742',count:220289,
-   rat:'Active PP+ users in good standing. Goal is engagement and cross-sell to Marketplace and Credit Card.',
-   criteria:'status = enabled; active',
    excl:'NOT in Late; NOT in Charged Off',
-   pairs:[['↔ Pre-Consideration','✅','Subscription users have application_start is set; Pre-Consideration requires NOT set — structurally impossible'],['↔ Consideration','✅','status = enabled requires prior approval; Consideration requires NOT approved.ind — domain chain'],['↔ Conversion','✅','status = enabled vs NOT status = enabled — structurally impossible'],['↔ Denial','✅','One-way lifecycle — once approved and enabled, users can never be denied; domain-impossible (no explicit exclusion)'],['↔ Reengagement','✅','Reengagement blocks status = enabled — structurally impossible'],['↔ Late','✅','Retention excludes Late'],['↔ Charged Off','✅','Retention excludes Charged Off'],['↔ Churn','✅','status = enabled vs canceled/pending_cancellation — structurally impossible']]},
-  {name:'Late',color:'#D4537E',id:'10067055',count:59605,
-   rat:'PP+ users with a missed payment. Marketing suppressed; payment recovery takes priority.',
-   criteria:'days_past_due > 0; active',
-   excl:'NOT in Charged Off (charged_off.ind = true)',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Late; subscription requires application_start — structurally impossible'],['↔ Consideration','✅','days_past_due > 0 requires active subscription; Consideration requires NOT approved.ind — domain chain'],['↔ Conversion','✅','days_past_due > 0 requires status = enabled; Conversion requires NOT status = enabled — domain-impossible'],['↔ Denial','✅','Denial explicitly excludes Late'],['↔ Reengagement','✅','Reengagement excludes Late'],['↔ Retention','✅','Retention excludes Late'],['↔ Charged Off','✅','Late excludes Charged Off'],['↔ Churn','✅','Churn excludes Late']]},
-  {name:'Charged Off',color:'#5F5E5A',id:'10168348',count:80591,
+   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Denial'],['↔ Consideration','✅','Consideration excludes Denial'],['↔ Conversion','✅','Conversion excludes Denial; one-way lifecycle'],['↔ Reengagement','✅','Reengagement excludes Denial'],['↔ Retention','✅','Retention excludes Denial; one-way lifecycle — enabled users never denied'],['↔ Late','✅','Denial explicitly excludes Late'],['↔ Charged Off','✅','Denial explicitly excludes Charged Off'],['↔ Churn','✅','Churn excludes Denial; one-way lifecycle']]},
+  {name:'Reengagement',color:'#BA7517',id:'9625797',count:352982,
+   rat:'Users who have started or submitted a PP+ application but have never been enabled, and whose active funnel windows have expired. Re-application encouragement is the primary lever.',
+   criteria:'(application_start.ind OR application_submit.ind); status = \'\'; active',
+   excl:'NOT in Consideration; NOT in Conversion; NOT in Denial (Charged Off exclusion dropped — domain-reliant, accepted; Late now structurally separated via status = disabled)',
+   pairs:[['↔ Pre-Consideration','✅','Opposite application signal — PC: NOT(start.ind) AND NOT(submit.ind); Ree: start.ind OR submit.ind — structurally impossible'],['↔ Consideration','✅','Reengagement excludes Consideration'],['↔ Conversion','✅','Reengagement excludes Conversion'],['↔ Denial','✅','Reengagement excludes Denial'],['↔ Retention','✅','status = \'\' vs status = enabled — structurally impossible'],['↔ Late','✅','Reengagement requires status = \'\'; Late requires status = disabled — structurally impossible'],['↔ Charged Off','✅','Domain-reliant: Reengagement no longer explicitly excludes Charged Off. status = \'\' means no subscription; charged_off.ind requires one. Not structurally enforced; accepted (violating states out of scope)'],['↔ Churn','✅','status = \'\' vs canceled/pending_cancellation — structurally impossible']]},
+  {name:'Retention',color:'#639922',id:'9625742',count:243392,
+   rat:'Active PP+ subscribers in good standing (status = enabled). Goal is engagement and cross-sell to Marketplace and Credit Card.',
+   criteria:'status = enabled; active',
+   excl:'NOT in Denial; NOT in Late; NOT in Charged Off',
+   pairs:[['↔ Pre-Consideration','✅','Subscription users have application signals set and status = enabled; PC requires status = \'\' — structurally impossible'],['↔ Consideration','✅','status = enabled requires prior approval; Consideration requires status = \'\' — structurally impossible'],['↔ Conversion','✅','status = enabled vs Conversion status ∈ {\'\', opted_in, pending} — structurally impossible'],['↔ Denial','✅','Retention explicitly excludes Denial; one-way lifecycle — enabled users never denied'],['↔ Reengagement','✅','status = enabled vs status = \'\' — structurally impossible'],['↔ Late','✅','status = enabled vs status = disabled — structurally impossible (Retention also excludes Late)'],['↔ Charged Off','✅','Retention excludes Charged Off'],['↔ Churn','✅','status = enabled vs canceled/pending_cancellation — structurally impossible']]},
+  {name:'Late',color:'#D4537E',id:'10067055',count:78679,
+   rat:'PP+ subscriptions in a disabled state (current_backend_status = disabled). Marketing suppressed; recovery / reactivation takes priority.',
+   criteria:'current_backend_status = disabled; active',
+   excl:'NOT in Charged Off',
+   pairs:[['↔ Pre-Consideration','✅','PC requires status = \'\' or unset; Late requires status = disabled — structurally impossible'],['↔ Consideration','✅','Consideration requires status = \'\'; Late requires status = disabled — structurally impossible'],['↔ Conversion','✅','Conversion status ∈ {\'\', opted_in, pending}; Late requires status = disabled — structurally impossible'],['↔ Denial','✅','Denial explicitly excludes Late'],['↔ Reengagement','✅','Reengagement requires status = \'\'; Late requires status = disabled — structurally impossible'],['↔ Retention','✅','status = disabled vs status = enabled — structurally impossible'],['↔ Charged Off','✅','Late excludes Charged Off'],['↔ Churn','✅','status = disabled vs canceled/pending_cancellation — structurally impossible']]},
+  {name:'Charged Off',color:'#5F5E5A',id:'10168348',count:92193,
    rat:'Terminal delinquency. Suppression only.',
    criteria:'charged_off.ind = true; active',
    excl:'Terminal state',
-   pairs:[['↔ Pre-Consideration','✅','Pre-Consideration excludes Charged Off; subscription requires application_start — structurally impossible'],['↔ Consideration','✅','charged_off.ind = true requires subscription context; Consideration requires NOT approved.ind — domain chain'],['↔ Conversion','✅','charged_off.ind = true requires subscription context; Conversion requires NOT status = enabled — domain-impossible'],['↔ Denial','✅','Denial explicitly excludes Charged Off'],['↔ Reengagement','✅','Reengagement excludes Charged Off'],['↔ Retention','✅','Retention excludes Charged Off'],['↔ Late','✅','Late excludes Charged Off'],['↔ Churn','✅','Churn excludes Charged Off']]},
-  {name:'Churn',color:'#D85A30',id:'10160128',count:2492580,
-   rat:'Two sub-states: pending_cancellation (cancellation in progress) and canceled (user-requested — win-back lever). Sub-states may warrant differentiated messaging.',
+   pairs:[['↔ Pre-Consideration','✅','PC excludes Charged Off; charged_off.ind requires a subscription (status ≠ \'\') — structurally impossible'],['↔ Consideration','✅','charged_off.ind requires a subscription; Consideration requires status = \'\' — domain-impossible'],['↔ Conversion','✅','charged_off.ind requires a subscription; Conversion is pre-enablement — domain-impossible'],['↔ Denial','✅','Denial explicitly excludes Charged Off'],['↔ Reengagement','✅','Domain-reliant: Ree requires status = \'\' (no subscription); charged_off.ind requires one; accepted (out of scope)'],['↔ Retention','✅','Retention excludes Charged Off'],['↔ Late','✅','Late excludes Charged Off'],['↔ Churn','✅','Churn excludes Charged Off']]},
+  {name:'Churn',color:'#D85A30',id:'10160128',count:2461567,
+   rat:'Two sub-states: canceled (user-requested — win-back lever) and pending_cancellation (in progress). Sub-states may warrant differentiated messaging.',
    criteria:'status = canceled/pending_cancellation; active',
-   excl:'NOT in Late; NOT in Charged Off',
-   pairs:[['↔ Pre-Consideration','✅','Churn statuses require prior subscription with application_start; Pre-Consideration requires NOT set — structurally impossible'],['↔ Consideration','✅','Re-application while subscribed is not a valid user state — domain-impossible (no explicit list exclusion)'],['↔ Conversion','✅','Churn statuses require prior enabled subscription; Conversion requires NOT status = enabled — domain-impossible for newly approved users'],['↔ Denial','✅','One-way lifecycle — any user in a subscription-status list was previously approved, ruling out Denial permanently'],['↔ Reengagement','✅','Reengagement blocks canceled/pending_cancellation — structurally impossible'],['↔ Retention','✅','status = canceled/pending_cancellation vs status = enabled — structurally impossible'],['↔ Late','✅','Churn excludes Late'],['↔ Charged Off','✅','Churn excludes Charged Off']]}
+   excl:'NOT in Denial; NOT in Late; NOT in Charged Off',
+   pairs:[['↔ Pre-Consideration','✅','Churn statuses require a prior subscription; PC requires status = \'\' or unset — structurally impossible'],['↔ Consideration','✅','status = \'\' vs canceled/pending_cancellation — structurally impossible'],['↔ Conversion','✅','Churn requires canceled/pending_cancellation; Conversion has none (pending ≠ pending_cancellation) — structural/domain'],['↔ Denial','✅','Churn excludes Denial; one-way lifecycle — Churn-status users were previously enabled'],['↔ Reengagement','✅','status = canceled/pending_cancellation vs status = \'\' — structurally impossible'],['↔ Retention','✅','canceled/pending_cancellation vs status = enabled — structurally impossible'],['↔ Late','✅','status = canceled/pending_cancellation vs status = disabled — structurally impossible'],['↔ Charged Off','✅','Churn excludes Charged Off']]}
 ],
 qa:[
   {group:'Application funnel',pairs:[
-    ['Consideration ↔ Conversion','✅','NOT approved.ind vs approved.ind — structurally impossible'],
+    ['Consideration ↔ Conversion','✅','Consideration excludes Conversion; status = \'\' also blocks Conversion\'s opted_in/pending paths'],
     ['Consideration ↔ Denial','✅','Consideration excludes Denial'],
+    ['Consideration ↔ Churn','✅','Structural field separation: Consideration status = \'\' vs Churn canceled/pending_cancellation (explicit Churn exclusion dropped)'],
     ['Consideration ↔ Reengagement','✅','Reengagement excludes Consideration'],
     ['Consideration ↔ Pre-Consideration','✅','Pre-Consideration excludes Consideration'],
-    ['Conversion ↔ Denial','✅','Conversion excludes Denial'],
+    ['Conversion ↔ Denial','✅','Conversion now explicitly excludes Denial; one-way lifecycle'],
     ['Conversion ↔ Reengagement','✅','Reengagement excludes Conversion'],
     ['Conversion ↔ Pre-Consideration','✅','Pre-Consideration excludes Conversion'],
     ['Denial ↔ Reengagement','✅','Reengagement excludes Denial'],
     ['Denial ↔ Pre-Consideration','✅','Pre-Consideration excludes Denial'],
-    ['Reengagement ↔ Pre-Consideration','✅','Reengagement requires application_start is set; Pre-Consideration requires it is NOT set — structurally impossible'],
+    ['Reengagement ↔ Pre-Consideration','✅','Opposite application_start/application_submit requirement — structurally impossible'],
   ]},
   {group:'Subscription status funnel',pairs:[
-    ['Retention ↔ Churn','✅','Different backend_status values (enabled vs canceled/pending_cancellation) — structurally impossible'],
-    ['Retention ↔ Late','✅','Retention excludes Late'],
+    ['Retention ↔ Churn','✅','enabled vs canceled/pending_cancellation — structurally impossible'],
+    ['Retention ↔ Late','✅','status = enabled vs status = disabled — structurally impossible'],
     ['Retention ↔ Charged Off','✅','Retention excludes Charged Off'],
-    ['Late ↔ Churn','✅','Churn excludes Late'],
+    ['Retention ↔ Denial','✅','Retention excludes Denial; one-way lifecycle'],
+    ['Late ↔ Churn','✅','status = disabled vs canceled/pending_cancellation — structurally impossible'],
     ['Charged Off ↔ Churn','✅','Churn excludes Charged Off'],
+    ['Churn ↔ Denial','✅','Churn excludes Denial; one-way lifecycle'],
     ['Late ↔ Charged Off','✅','Late excludes Charged Off'],
   ]},
   {group:'Cross-funnel',pairs:[
-    ['Conversion ↔ Retention','✅','NOT status = enabled vs status = enabled — structurally impossible'],
-    ['Reengagement ↔ Retention','✅','Reengagement requires NOT status = enabled; Retention requires status = enabled'],
-    ['Reengagement ↔ Churn','✅','Reengagement requires NOT status = canceled/pending_cancellation; Churn requires one of those values'],
-    ['Reengagement ↔ Late','✅','Reengagement explicitly excludes Late'],
-    ['Reengagement ↔ Charged Off','✅','Charged Off exclusion added to Reengagement — confirmed fixed'],
-    ['Denial ↔ all subscription lists','✅','One-way lifecycle: once approved and enabled, a user can never be denied again. Any user in a subscription-status list was previously approved, ruling out Denial permanently'],
+    ['Conversion ↔ Retention','✅','Conversion status ∈ {\'\', opted_in, pending} vs status = enabled — structurally impossible'],
+    ['Reengagement ↔ Retention','✅','Reengagement requires status = \'\'; Retention requires status = enabled'],
+    ['Reengagement ↔ Churn','✅','Reengagement requires status = \'\'; Churn requires canceled/pending_cancellation'],
+    ['Reengagement ↔ Late','✅','Reengagement requires status = \'\'; Late requires status = disabled — structurally impossible'],
+    ['Reengagement ↔ Charged Off','✅','Domain-reliant — Ree explicit Charged Off exclusion dropped; status = \'\' means no subscription (accepted — out of scope)'],
+    ['Denial ↔ all subscription lists','✅','One-way lifecycle: once approved and enabled a user can never be denied again'],
     ['Consideration/Conversion ↔ all subscription lists','✅','Re-application while subscribed is not a valid user state'],
-    ['Pre-Consideration ↔ all subscription lists','✅','Subscription-status users have application_start is set; Pre-Consideration requires it NOT set'],
+    ['Pre-Consideration ↔ all subscription lists','✅','Subscription users have application signals set and non-empty status; PC requires neither'],
   ]},
-]}
+],
+openItems:[]}
 ];
 
 /* ── Helpers ── */
@@ -445,20 +469,39 @@ function togQA(key){
   el.classList.toggle('open');
   chev.textContent=el.classList.contains('open')?'▼':'▶';
 }
+function flaggedCount(pairs){return pairs.filter(p=>p[1]!=='✅').length}
 
 function renderQA(p){
   if(!p.qa)return'';
   const total=p.qa.reduce((s,g)=>s+g.pairs.length,0);
+  const flagged=p.qa.reduce((s,g)=>s+flaggedCount(g.pairs),0);
+  const summary=flagged?`${total} pairs · ${flagged} need review`:`${total} pairs · all clean`;
   const groups=p.qa.map(g=>`<div class="qa-group">
     <div class="qa-gh">${g.group}</div>
     <table class="qt">${g.pairs.map(([pair,status,reason])=>`<tr><td>${pair}</td><td>${status}</td><td>${reason}</td></tr>`).join('')}</table>
   </div>`).join('');
   return `<div class="qa-wrap">
-    <button class="qa-toggle" onclick="togQA('${p.key}')">
-      <span>Mutual exclusivity QA — ${total} pairs · all clean</span>
+    <button class="qa-toggle${flagged?' warn':''}" onclick="togQA('${p.key}')">
+      <span>Mutual exclusivity QA — ${summary}</span>
       <span id="qa-chev-${p.key}" style="font-size:9px">▶</span>
     </button>
     <div class="qa-body" id="qa-${p.key}">${groups}</div>
+  </div>`;
+}
+
+function renderOpen(p){
+  if(!p.openItems||!p.openItems.length)return'';
+  const rows=p.openItems.map(o=>`<div class="qa-group">
+    <div class="oi-sev">${o.sev}</div>
+    <div class="oi-title">${o.title}</div>
+    <div class="oi-text">${o.text}</div>
+  </div>`).join('');
+  return `<div class="qa-wrap">
+    <button class="qa-toggle warn" onclick="togQA('oi-${p.key}')">
+      <span>⚠️ Open items — ${p.openItems.length}</span>
+      <span id="qa-chev-oi-${p.key}" style="font-size:9px">▶</span>
+    </button>
+    <div class="qa-body" id="qa-oi-${p.key}">${rows}</div>
   </div>`;
 }
 
@@ -476,7 +519,7 @@ function render(p){
     <div class="mc">
       <div class="ml">Active user base</div>
       <div class="mv">${fmt(BASE)}</div>
-      <div class="ms">Iterable profiles where is_active = true</div>
+      <div class="ms">is_active = true · <a class="ilink" style="margin:0" href="https://app.iterable.com/segmentation?emailListId=${BASE_LIST}" target="_blank">List ${BASE_LIST} ↗</a></div>
     </div>
     <div class="mc">
       <div class="ml">Delta (sum − base)</div>
@@ -501,9 +544,11 @@ function render(p){
 
   const cards=p.stages.map((s,i)=>{
     const cid=`${p.key}-${i}`;
+    const flagged=s.pairs?flaggedCount(s.pairs):0;
+    const pairsSummary=s.pairs?(flagged?`${s.pairs.length} pairs · ${flagged} ⚠️`:`${s.pairs.length} pairs · all ✅`):'';
     const pairsHtml=s.pairs?`<div class="qa-wrap">
-      <button class="qa-toggle" onclick="togQA('sq-${cid}')">
-        <span>Mutual exclusivity — ${s.pairs.length} pairs · all ✅</span>
+      <button class="qa-toggle${flagged?' warn':''}" onclick="togQA('sq-${cid}')">
+        <span>Mutual exclusivity — ${pairsSummary}</span>
         <span id="qa-chev-sq-${cid}" style="font-size:9px">▶</span>
       </button>
       <div class="qa-body" id="qa-sq-${cid}">
@@ -531,12 +576,24 @@ function render(p){
     </div>`;
   }).join('');
 
-  const covHtml=p.coverage?`<div class="cov-wrap">
-    <div class="cov-l">Coverage check: <strong>${p.coverage.name}</strong> (List ${p.coverage.id})</div>
-    <div class="cov-r"><span class="badge" style="background:var(--green-bg);color:var(--green)">✓ ${fmt(p.coverage.count)} users — complete coverage</span><a class="ilink" href="https://app.iterable.com/segmentation?emailListId=${p.coverage.id}" target="_blank">List ↗</a></div>
-  </div>`:'';
+  let covHtml='';
+  if(p.coverage){
+    const clean=!p.coverage.count;
+    const badge=clean
+      ?`<span class="badge">✓ ${fmt(p.coverage.count)} users — complete coverage</span>`
+      :`<span class="badge amber">⚠ ${fmt(p.coverage.count)} users uncovered</span>`;
+    covHtml=`<div class="cov-wrap">
+      <div style="flex:1 1 100%">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div class="cov-l">Coverage check: <strong>${p.coverage.name}</strong> (List ${p.coverage.id})</div>
+          <div class="cov-r">${badge}<a class="ilink" href="https://app.iterable.com/segmentation?emailListId=${p.coverage.id}" target="_blank">List ↗</a></div>
+        </div>
+        ${p.coverage.note?`<div class="cov-note">${p.coverage.note}</div>`:''}
+      </div>
+    </div>`;
+  }
 
-  return metrics+dbar+leg+`<div class="stages">${cards}</div>`+covHtml+renderQA(p);
+  return metrics+dbar+leg+`<div class="stages">${cards}</div>`+covHtml+renderQA(p)+renderOpen(p);
 }
 
 function switchTab(key){
